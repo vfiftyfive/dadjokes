@@ -10,7 +10,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 	openai "github.com/sashabaranov/go-openai"
-	"github.com/vfiftyfive/dadjokes/internal"
+	"github.com/vfiftyfive/dadjokes/internal/joke"
 )
 
 type Joke struct {
@@ -34,7 +34,7 @@ func main() {
 
 	// Generate 100 jokes
 	openaiClient := openai.NewClient(apiKey)
-	joke, err := internal.GenerateJoke(openaiClient)
+	joke, err := joke.GenerateJoke(openaiClient)
 	for i := 0; i < 100; i++ {
 		joke := Joke{Text: joke}
 

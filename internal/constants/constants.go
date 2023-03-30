@@ -1,4 +1,4 @@
-package internal
+package constants
 
 const (
 	natsURL          = "nats://localhost:4222"
