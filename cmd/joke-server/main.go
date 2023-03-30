@@ -10,13 +10,9 @@ import (
 
 	"github.com/nats-io/nats.go"
 	openai "github.com/sashabaranov/go-openai"
+	"github.com/vfiftyfive/dadjokes/internal/constants"
 	"github.com/vfiftyfive/dadjokes/internal/joke"
 )
-
-type Joke struct {
-	ID   string
-	Text string
-}
 
 func main() {
 	// Get the API key from the environment
@@ -26,7 +22,7 @@ func main() {
 	}
 
 	// Connect to NATS
-	nc, err := nats.Connect(constants.natsURL)
+	nc, err := nats.Connect(constants.NatsURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
@@ -34,23 +30,28 @@ func main() {
 
 	// Generate 100 jokes
 	openaiClient := openai.NewClient(apiKey)
-	joke, err := joke.GenerateJoke(openaiClient)
+
 	for i := 0; i < 100; i++ {
-		joke := Joke{Text: joke}
+		jokeTxt, err := joke.GenerateJoke(openaiClient)
+		if err != nil {
+			log.Printf("Failed to generate joke: %v", err)
+			continue
+		}
+		joke := joke.Joke{Text: jokeTxt}
 
 		// Publish the joke to the "joke.save" subject
-		nc.Publish(constants.saveJokeSubject, []byte(joke.Text))
+		nc.Publish(constants.SaveJokeSubject, []byte(joke.Text))
 	}
 
 	http.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		// Get a random joke from the joke-worker
-		resp, err := nc.Request(constants.getJokeSubject, nil, 5*time.Second)
+		resp, err := nc.Request(constants.GetJokeSubject, nil, 5*time.Second)
 		if err != nil {
 			http.Error(w, "Error getting joke", http.StatusInternalServerError)
 			return
 		}
 
-		var joke Joke
+		var joke joke.Joke
 		json.Unmarshal(resp.Data, &joke)
 
 		fmt.Fprintf(w, "Joke: %s", joke.Text)
