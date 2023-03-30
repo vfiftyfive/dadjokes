@@ -13,12 +13,6 @@ import (
 	"github.com/vfiftyfive/dadjokes/internal"
 )
 
-const (
-	natsURL         = "nats://localhost:4222"
-	saveJokeSubject = "joke.save"
-	getJokeSubject  = "joke.get"
-)
-
 type Joke struct {
 	ID   string
 	Text string
@@ -32,7 +26,7 @@ func main() {
 	}
 
 	// Connect to NATS
-	nc, err := nats.Connect(natsURL)
+	nc, err := nats.Connect(constants.natsURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
@@ -45,12 +39,12 @@ func main() {
 		joke := Joke{Text: joke}
 
 		// Publish the joke to the "joke.save" subject
-		nc.Publish(saveJokeSubject, []byte(joke.Text))
+		nc.Publish(constants.saveJokeSubject, []byte(joke.Text))
 	}
 
 	http.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		// Get a random joke from the joke-worker
-		resp, err := nc.Request(getJokeSubject, nil, 5*time.Second)
+		resp, err := nc.Request(constants.getJokeSubject, nil, 5*time.Second)
 		if err != nil {
 			http.Error(w, "Error getting joke", http.StatusInternalServerError)
 			return
