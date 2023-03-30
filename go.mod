@@ -1,4 +1,4 @@
-module tests/main.go
+module github.com/vfiftyfive/dadjokes
 
 go 1.20
 

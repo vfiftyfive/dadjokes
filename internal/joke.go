@@ -11,7 +11,7 @@ type Joke struct {
 	Text string
 }
 
-func generateJoke(client *openai.Client) (string, error) {
+func GenerateJoke(client *openai.Client) (string, error) {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
