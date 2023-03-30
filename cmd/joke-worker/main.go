@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
+	"github.com/vfiftyfive/dadjokes/internal/constants"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -23,7 +24,7 @@ type Joke struct {
 
 func main() {
 	// Connect to NATS
-	nc, err := nats.Connect(natsURL)
+	nc, err := nats.Connect(constants.NatsURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
@@ -31,12 +32,12 @@ func main() {
 
 	//Connect to Redis
 	rdb := redis.NewClient(&redis.Options{
-		Addr: redisAddr,
+		Addr: constants.RedisAddr,
 	})
 	defer rdb.Close()
 
 	//Connect to MongoDB
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURI))
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(constants.MongoURI))
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -45,7 +46,7 @@ func main() {
 	jokesCollection := client.Database("jokesdb").Collection("jokes")
 
 	// Subscribe to the "jokes.get" subject
-	nc.Subscribe(getJokeSubject, func(msg *nats.Msg) {
+	nc.Subscribe(constants.GetJokeSubject, func(msg *nats.Msg) {
 		// Get a random joke from the database
 		joke := getRandomJoke(jokesCollection)
 
@@ -58,7 +59,7 @@ func main() {
 	})
 
 	// Subscribe to the "jokes.save" subject
-	nc.Subscribe(saveJokeSubject, func(msg *nats.Msg) {
+	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
 		// Decode the joke from the message
 		joke := Joke{}
 		json.Unmarshal(msg.Data, &joke)
@@ -75,7 +76,7 @@ func main() {
 		}
 
 		//Notify the joke-server that the joke has been saved
-		nc.Publish(mongoSaveSubject, []byte(jokeID))
+		nc.Publish(constants.MongoSaveSubject, []byte(jokeID))
 	})
 
 	// Wait for messages

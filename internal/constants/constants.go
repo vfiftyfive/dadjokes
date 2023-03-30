@@ -1,10 +1,10 @@
 package constants
 
 const (
-	natsURL          = "nats://localhost:4222"
-	redisAddr        = "localhost:6379"
-	mongoURI         = "mongodb://localhost:27017"
-	getJokeSubject   = "joke.get"
-	saveJokeSubject  = "joke.save"
-	mongoSaveSubject = "mongo.save"
+	NatsURL          = "nats://localhost:4222"
+	RedisAddr        = "localhost:6379"
+	MongoURI         = "mongodb://localhost:27017"
+	GetJokeSubject   = "joke.get"
+	SaveJokeSubject  = "joke.save"
+	MongoSaveSubject = "mongo.save"
 )
