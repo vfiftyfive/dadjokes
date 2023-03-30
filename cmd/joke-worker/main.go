@@ -11,16 +11,11 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
 	"github.com/vfiftyfive/dadjokes/internal/constants"
+	"github.com/vfiftyfive/dadjokes/internal/joke"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-// Joke represents a joke
-type Joke struct {
-	ID   string
-	Text string
-}
 
 func main() {
 	// Connect to NATS
@@ -61,7 +56,7 @@ func main() {
 	// Subscribe to the "jokes.save" subject
 	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
 		// Decode the joke from the message
-		joke := Joke{}
+		joke := joke.Joke{}
 		json.Unmarshal(msg.Data, &joke)
 		if err != nil {
 			log.Printf("Error decoding joke: %v", err)
@@ -69,14 +64,11 @@ func main() {
 		}
 
 		// Save the joke to the database
-		jokeID, err := saveJoke(jokesCollection, &joke)
+		_, err := saveJoke(jokesCollection, &joke)
 		if err != nil {
 			log.Printf("Error saving joke: %v", err)
 			return
 		}
-
-		//Notify the joke-server that the joke has been saved
-		nc.Publish(constants.MongoSaveSubject, []byte(jokeID))
 	})
 
 	// Wait for messages
@@ -85,8 +77,8 @@ func main() {
 }
 
 // Returns a random joke from the database
-func getRandomJoke(jokesCollection *mongo.Collection) *Joke {
-	joke := &Joke{}
+func getRandomJoke(jokesCollection *mongo.Collection) *joke.Joke {
+	joke := &joke.Joke{}
 	opts := options.FindOne().SetSkip(int64(rand.Intn(100)))
 	err := jokesCollection.FindOne(context.Background(), bson.M{}, opts).Decode(joke)
 	if err != nil {
@@ -97,7 +89,7 @@ func getRandomJoke(jokesCollection *mongo.Collection) *Joke {
 }
 
 // Saves a joke to the database
-func saveJoke(jokesCollection *mongo.Collection, joke *Joke) (string, error) {
+func saveJoke(jokesCollection *mongo.Collection, joke *joke.Joke) (string, error) {
 	res, err := jokesCollection.InsertOne(context.Background(), joke)
 	if err != nil {
 		return "", err
