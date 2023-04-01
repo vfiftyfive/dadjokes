@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
-	"math/rand"
-	"time"
+	"os"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
+	"github.com/sashabaranov/go-openai"
 	"github.com/vfiftyfive/dadjokes/internal/constants"
 	"github.com/vfiftyfive/dadjokes/internal/joke"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,7 +17,17 @@ import (
 )
 
 func main() {
-	// Connect to NATS
+
+	//Get the API key from the environment
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		log.Fatalf("OPENAI_API_KEY environment variable is not set")
+	}
+
+	//Create a new OpenAI client
+	openaiClient := openai.NewClient(apiKey)
+
+	//Connect to NATS
 	nc, err := nats.Connect(constants.NatsURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
@@ -40,59 +49,49 @@ func main() {
 
 	jokesCollection := client.Database("jokesdb").Collection("jokes")
 
-	// Subscribe to the "jokes.get" subject
+	//Subscribe to the "jokes.get" subject
 	nc.Subscribe(constants.GetJokeSubject, func(msg *nats.Msg) {
-		// Get a random joke from the database
-		joke := getRandomJoke(jokesCollection)
 
-		// Cache the jokes in Redis for 5 minutes
-		cacheKey := fmt.Sprintf("joke:%s", joke.ID)
-		jokeBytes, _ := json.Marshal(joke)
-		rdb.Set(context.Background(), cacheKey, jokeBytes, 5*time.Minute)
-		//Respond with the joke
-		msg.Respond((jokeBytes))
-	})
+		jokesCount, _ := jokesCollection.CountDocuments(context.Background(), bson.M{})
+		var retrievedJoke joke.Joke
+		for {
+			//If the DB collection reaches 50 jokes, pick a random joke from the cache or the DB
+			if jokesCount >= 50 {
+				retrievedJoke, err = joke.GetRandomJoke(jokesCollection, rdb)
+				if err == nil {
+					continue
+				}
+				break
+			}
+			//Generate a new joke and make sure it's not a duplicate
+			generatedJokeTxt, err := joke.GenerateJoke(openaiClient)
+			if err != nil {
+				log.Printf("Error generating joke: %v", err)
+				continue
+			}
 
-	// Subscribe to the "jokes.save" subject
-	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
-		// Decode the joke from the message
-		joke := joke.Joke{}
-		json.Unmarshal(msg.Data, &joke)
-		if err != nil {
-			log.Printf("Error decoding joke: %v", err)
-			return
+			filter := bson.M{"text": generatedJokeTxt}
+			jokeExists := jokesCollection.FindOne(context.Background(), filter).Err()
+			if jokeExists == mongo.ErrNoDocuments {
+				retrievedJoke = joke.Joke{Text: generatedJokeTxt}
+				break
+			}
 		}
 
-		// Save the joke to the database
-		_, err := saveJoke(jokesCollection, &joke)
-		if err != nil {
-			log.Printf("Error saving joke: %v", err)
-			return
+		//Respond with the joke
+		jokeBytes, _ := json.Marshal(retrievedJoke)
+		msg.Respond(jokeBytes)
+	})
+
+	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
+		// Save the joke to the DB
+		retrievedJoke := joke.Joke{Text: string(msg.Data)}
+		err := joke.SaveJoke(jokesCollection, &retrievedJoke)
+		if err == nil {
+			joke.CacheJoke(rdb, &retrievedJoke)
 		}
 	})
 
 	// Wait for messages
 	select {}
-
-}
-
-// Returns a random joke from the database
-func getRandomJoke(jokesCollection *mongo.Collection) *joke.Joke {
-	joke := &joke.Joke{}
-	opts := options.FindOne().SetSkip(int64(rand.Intn(100)))
-	err := jokesCollection.FindOne(context.Background(), bson.M{}, opts).Decode(joke)
-	if err != nil {
-		log.Printf("Error retrieving joke: %v", err)
-		return nil
-	}
-	return joke
-}
-
-// Saves a joke to the database
-func saveJoke(jokesCollection *mongo.Collection, joke *joke.Joke) (string, error) {
-	res, err := jokesCollection.InsertOne(context.Background(), joke)
-	if err != nil {
-		return "", err
-	}
-	return res.InsertedID.(string), nil
 }
