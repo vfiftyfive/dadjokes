@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"os"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
@@ -18,14 +17,8 @@ import (
 
 func main() {
 
-	//Get the API key from the environment
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		log.Fatalf("OPENAI_API_KEY environment variable is not set")
-	}
-
 	//Create a new OpenAI client
-	openaiClient := openai.NewClient(apiKey)
+	openaiClient := openai.NewClient(constants.ApiKey)
 
 	//Connect to NATS
 	nc, err := nats.Connect(constants.NatsURL)
@@ -36,12 +29,12 @@ func main() {
 
 	//Connect to Redis
 	rdb := redis.NewClient(&redis.Options{
-		Addr: constants.RedisAddr,
+		Addr: constants.RedisURL,
 	})
 	defer rdb.Close()
 
 	//Connect to MongoDB
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(constants.MongoURI))
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(constants.MongoURL))
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
