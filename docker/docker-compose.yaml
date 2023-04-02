@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  joke-server:
+    build:
+      context: ../
+      dockerfile: ./cmd/joke-server/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NATS_URL=nats://nats:4222
+      - MONGO_URL=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - nats
+      - mongo
+      - redis
+
+  joke-worker:
+    build:
+      context: ../
+      dockerfile: ./cmd/joke-worker/Dockerfile
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NATS_URL=nats://nats:4222
+      - MONGO_URL=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - nats
+      - mongo
+      - redis
+
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
