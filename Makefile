@@ -11,15 +11,9 @@ DOCKER_COMPOSE_FILE := $(BASE_DIR)/docker/docker-compose.yml
 SERVER_BINARY := joke-server
 WORKER_BINARY := joke-worker
 
-# Define the port mappings for the Docker Compose and Kubernetes files.
-export NATS_PORT := 4222
-export MONGO_PORT := 27017
-export REDIS_PORT := 6379
-export SERVER_PORT := 8080
-
 # Define the Docker Compose commands.
-DOCKER_COMPOSE_UP := docker-compose -f docker/docker-compose.yaml up -d
-DOCKER_COMPOSE_DOWN := docker-compose -f docker/docker-compose.yaml down
+DOCKER_COMPOSE_UP := docker-compose -f $(DOCKER_COMPOSE_FILE) up -d
+DOCKER_COMPOSE_DOWN := docker-compose -f $(DOCKER_COMPOSE_FILE) down
 DOCKER_COMPOSE_BUILD_SERVER := cd cmd/joke-server && docker build -t joke-server -f Dockerfile ../..
 DOCKER_COMPOSE_BUILD_WORKER := cd cmd/joke-worker && docker build -t joke-worker -f Dockerfile ../..
 
