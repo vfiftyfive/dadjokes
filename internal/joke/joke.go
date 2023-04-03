@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	openai "github.com/sashabaranov/go-openai"
+	"github.com/texttheater/golang-levenshtein/levenshtein"
 	"github.com/vfiftyfive/dadjokes/internal/constants"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -98,4 +99,21 @@ func CacheJoke(rdb *redis.Client, joke *Joke) {
 	// Add the new joke to the cache
 	jokeBytes, _ := json.Marshal(joke)
 	rdb.Set(context.Background(), fmt.Sprintf("joke:%s", joke.ID), jokeBytes, constants.RedisTTL)
+}
+
+// Checks if a joke is similar to an existing joke
+func IsSimilarJoke(joke1, joke2 string) bool {
+	distance := levenshtein.DistanceForStrings([]rune(joke1), []rune(joke2), levenshtein.DefaultOptions)
+	maxLength := max(len(joke1), len(joke2))
+	similarity := 1 - float64(distance)/float64(maxLength)
+
+	return similarity >= 0.8
+}
+
+// Returns the max of two integers
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

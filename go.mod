@@ -6,6 +6,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/nats-io/nats.go v1.25.0
 	github.com/sashabaranov/go-openai v1.5.8
+	github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c
 	go.mongodb.org/mongo-driver v1.11.3
 )
 

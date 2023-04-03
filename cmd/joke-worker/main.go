@@ -45,16 +45,22 @@ func main() {
 	//Subscribe to the "jokes.get" subject
 	nc.Subscribe(constants.GetJokeSubject, func(msg *nats.Msg) {
 
-		jokesCount, _ := jokesCollection.CountDocuments(context.Background(), bson.M{})
+		jokesCount, err := jokesCollection.CountDocuments(context.Background(), bson.M{})
+		if err != nil {
+			log.Printf("Error counting jokes: %v", err)
+			msg.Respond([]byte("Error counting jokes"))
+			return
+		}
+
 		var retrievedJoke joke.Joke
 		for {
 			//If the DB collection reaches 50 jokes, pick a random joke from the cache or the DB
 			if jokesCount >= 50 {
 				retrievedJoke, err = joke.GetRandomJoke(jokesCollection, rdb)
 				if err == nil {
-					continue
+					break
 				}
-				break
+				continue
 			}
 			//Generate a new joke and make sure it's not a duplicate
 			generatedJokeTxt, err := joke.GenerateJoke(openaiClient)
@@ -63,9 +69,26 @@ func main() {
 				continue
 			}
 
-			filter := bson.M{"text": generatedJokeTxt}
-			jokeExists := jokesCollection.FindOne(context.Background(), filter).Err()
-			if jokeExists == mongo.ErrNoDocuments {
+			// Check if the joke is a duplicate
+			cursor, err := jokesCollection.Find(context.Background(), bson.M{})
+			if err != nil {
+				log.Printf("Error finding joke: %v", err)
+				continue
+			}
+			defer cursor.Close(context.Background())
+
+			foundSimilarJoke := false
+			for cursor.Next(context.Background()) {
+				var existingJoke joke.Joke
+				cursor.Decode(&existingJoke)
+
+				if joke.IsSimilarJoke(existingJoke.Text, generatedJokeTxt) {
+					foundSimilarJoke = true
+					break
+				}
+			}
+
+			if !foundSimilarJoke {
 				retrievedJoke = joke.Joke{Text: generatedJokeTxt}
 				break
 			}
