@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/texttheater/golang-levenshtein/levenshtein"
 	"github.com/vfiftyfive/dadjokes/internal/constants"
@@ -38,19 +38,6 @@ func GenerateJoke(client *openai.Client) (string, error) {
 		case <-ctx.Done():
 			return "", errors.New("GPT-3 API call timed out")
 		default:
-			// resp, err := client.CreateChatCompletion(
-			// 	ctx,
-			// 	openai.ChatCompletionRequest{
-			// 		Model: openai.GPT3Dot5Turbo,
-			// 		Messages: []openai.ChatCompletionMessage{
-			// 			{
-			// 				Role:    openai.ChatMessageRoleUser,
-			// 				Content: "Tell me a dad joke",
-			// 			},
-			// 		},
-			// 	},
-			// )
-
 			resp, err := client.CreateCompletion(context.Background(), openai.CompletionRequest{
 				Prompt:    "Tell me a dad joke",
 				Model:     "text-davinci-003",
@@ -121,10 +108,17 @@ func getJokeFromDB(jokesCollection *mongo.Collection) Joke {
 }
 
 // Saves a joke to the cache and the DB
-func CacheJoke(rdb *redis.Client, joke *Joke) {
+func CacheJoke(rdb *redis.Client, joke *Joke) error {
 	// Add the new joke to the cache
-	jokeBytes, _ := json.Marshal(joke)
-	rdb.Set(context.Background(), fmt.Sprintf("joke:%s", joke.ID), jokeBytes, constants.RedisTTL)
+	jokeBytes, err := json.Marshal(joke)
+	if err != nil {
+		return fmt.Errorf("failed to marshal joke: %v", err)
+	}
+	_, err = rdb.Set(context.Background(), fmt.Sprintf("joke:%s", joke.ID), jokeBytes, constants.RedisTTL).Result()
+	if err != nil {
+		return fmt.Errorf("failed to set joke in cache: %v", err)
+	}
+	return nil
 }
 
 // Checks if a joke is similar to an existing joke

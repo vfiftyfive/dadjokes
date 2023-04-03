@@ -3,15 +3,15 @@ module github.com/vfiftyfive/dadjokes
 go 1.20
 
 require (
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/nats-io/nats.go v1.25.0
+	github.com/redis/go-redis/v9 v9.0.3
 	github.com/sashabaranov/go-openai v1.5.8
 	github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c
 	go.mongodb.org/mongo-driver v1.11.3
 )
 
 require (
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.1 // indirect

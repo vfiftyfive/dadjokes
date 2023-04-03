@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/nats-io/nats.go"
+	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
 	"github.com/vfiftyfive/dadjokes/internal/constants"
 	"github.com/vfiftyfive/dadjokes/internal/joke"
@@ -32,6 +32,12 @@ func main() {
 		Addr: constants.RedisURL,
 	})
 	defer rdb.Close()
+
+	//Test the connection to Redis
+	_, err = rdb.Ping(context.Background()).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v with connection address set to %v", err, constants.RedisURL)
+	}
 
 	//Connect to MongoDB
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(constants.MongoURL))
@@ -108,7 +114,10 @@ func main() {
 		retrievedJoke := joke.Joke{Text: string(msg.Data)}
 		err := joke.SaveJoke(jokesCollection, &retrievedJoke)
 		if err == nil {
-			joke.CacheJoke(rdb, &retrievedJoke)
+			err = joke.CacheJoke(rdb, &retrievedJoke)
+			if err != nil {
+				log.Printf("Error caching joke: %v", err)
+			}
 		} else {
 			log.Printf("Error saving joke: %v", err)
 		}

@@ -9,14 +9,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NATS_URL=nats://nats:4222
-      - MONGO_URL=mongodb://mongo:27017
-      - REDIS_URL=redis://redis:6379
     depends_on:
       - nats
-      - mongo
-      - redis
+    networks:
+      - joke-network
 
   joke-worker:
     image: joke-worker:latest
@@ -27,23 +24,35 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NATS_URL=nats://nats:4222
       - MONGO_URL=mongodb://mongo:27017
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis:6379
     depends_on:
       - nats
       - mongo
       - redis
+    networks:
+      - joke-network
 
   nats:
     image: nats:latest
     ports:
       - "4222:4222"
+    networks:
+      - joke-network
 
   mongo:
     image: mongo:latest
     ports:
       - "27017:27017"
+    networks:
+      - joke-network
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
+    networks:
+      - joke-network
+
+networks:
+  joke-network:
+    driver: bridge
