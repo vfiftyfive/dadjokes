@@ -30,7 +30,12 @@ func main() {
 		}
 
 		joke := joke.Joke{}
-		json.Unmarshal(resp.Data, &joke)
+		err = json.Unmarshal(resp.Data, &joke)
+		if err != nil {
+			http.Error(w, "Error unmarshalling joke", http.StatusInternalServerError)
+			return
+		}
+
 		fmt.Fprintf(w, "Joke: %s", joke.Text)
 
 		// Publish the joke text to the "joke.save" subject

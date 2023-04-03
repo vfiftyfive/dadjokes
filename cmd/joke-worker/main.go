@@ -96,7 +96,11 @@ func main() {
 
 		//Respond with the joke
 		jokeBytes, _ := json.Marshal(retrievedJoke)
-		msg.Respond(jokeBytes)
+		err = msg.Respond(jokeBytes)
+		if err != nil {
+			log.Printf("Error responding to NATS message: %v", err)
+		}
+
 	})
 
 	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {

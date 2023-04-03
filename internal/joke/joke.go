@@ -72,7 +72,12 @@ func GetRandomJoke(jokesCollection *mongo.Collection, rdb *redis.Client) (Joke, 
 		jokeFromCache := Joke{}
 		json.Unmarshal(jokeBytes, &jokeFromCache)
 		return jokeFromCache, nil
+	} else if err != redis.Nil {
+		log.Printf("Error retrieving joke from cache: %v", err)
+
+		return Joke{}, err
 	}
+
 	return jokeFromDB, nil
 }
 
