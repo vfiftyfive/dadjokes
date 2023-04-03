@@ -20,8 +20,7 @@ var (
 )
 
 func init() {
-	//ApiKey = os.Getenv("OPENAI_API_KEY")
-	ApiKey = "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"
+	ApiKey = os.Getenv("OPENAI_API_KEY")
 	if ApiKey == "" {
 		log.Fatalf("OPENAI_API_KEY environment variable is not set")
 	}
