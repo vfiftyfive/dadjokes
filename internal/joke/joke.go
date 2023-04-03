@@ -3,9 +3,13 @@ package joke
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	openai "github.com/sashabaranov/go-openai"
@@ -25,29 +29,47 @@ type Joke struct {
 
 // Generates a joke using OpenAI's GPT-3 API
 func GenerateJoke(client *openai.Client) (string, error) {
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT3Dot5Turbo,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: "Tell me a dad joke",
-				},
-			},
-		},
-	)
-	if err != nil {
-		return "", err
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Retry mechanism with timeout
+	for {
+		select {
+		case <-ctx.Done():
+			return "", errors.New("GPT-3 API call timed out")
+		default:
+			// resp, err := client.CreateChatCompletion(
+			// 	ctx,
+			// 	openai.ChatCompletionRequest{
+			// 		Model: openai.GPT3Dot5Turbo,
+			// 		Messages: []openai.ChatCompletionMessage{
+			// 			{
+			// 				Role:    openai.ChatMessageRoleUser,
+			// 				Content: "Tell me a dad joke",
+			// 			},
+			// 		},
+			// 	},
+			// )
+
+			resp, err := client.CreateCompletion(context.Background(), openai.CompletionRequest{
+				Prompt:    "Tell me a dad joke",
+				Model:     "text-davinci-003",
+				MaxTokens: 256,
+			})
+
+			if err != nil {
+				log.Printf("Error generating joke: %v", err)
+				return "", err
+			}
+
+			if len(resp.Choices) == 0 {
+				continue
+			}
+			reWhitespace := regexp.MustCompile(`[\s\n\t]+`)
+			joke := reWhitespace.ReplaceAllString(resp.Choices[0].Text, " ")
+			return joke, nil
+		}
 	}
-
-	if len(resp.Choices) == 0 {
-		return "", err
-	}
-	joke := resp.Choices[0].Message.Content
-
-	return joke, nil
-
 }
 
 // Saves a joke to the database
@@ -65,7 +87,6 @@ func SaveJoke(jokesCollection *mongo.Collection, joke *Joke) error {
 // Returns a random joke from the database
 func GetRandomJoke(jokesCollection *mongo.Collection, rdb *redis.Client) (Joke, error) {
 	jokeFromDB := getJokeFromDB(jokesCollection)
-
 	cacheKey := fmt.Sprintf("joke:%s", jokeFromDB.ID)
 	jokeBytes, err := rdb.Get(context.Background(), cacheKey).Bytes()
 	if err == nil {
@@ -108,11 +129,17 @@ func CacheJoke(rdb *redis.Client, joke *Joke) {
 
 // Checks if a joke is similar to an existing joke
 func IsSimilarJoke(joke1, joke2 string) bool {
-	distance := levenshtein.DistanceForStrings([]rune(joke1), []rune(joke2), levenshtein.DefaultOptions)
+	reWhitespace := regexp.MustCompile(`[\s\n\t]+`)
+	rePunctuation := regexp.MustCompile(`[^\w\s]`)
+	cleanJoke1 := strings.TrimSpace(reWhitespace.ReplaceAllString(strings.ToLower(joke1), " "))
+	cleanJoke2 := strings.TrimSpace(reWhitespace.ReplaceAllString(strings.ToLower(joke2), " "))
+	cleanJoke1 = rePunctuation.ReplaceAllString(cleanJoke1, "")
+	cleanJoke2 = rePunctuation.ReplaceAllString(cleanJoke2, "")
+	distance := levenshtein.DistanceForStrings([]rune(strings.ToLower(cleanJoke1)), []rune(strings.ToLower(cleanJoke2)), levenshtein.DefaultOptions)
 	maxLength := max(len(joke1), len(joke2))
 	similarity := 1 - float64(distance)/float64(maxLength)
 
-	return similarity >= 0.8
+	return similarity >= 0.5
 }
 
 // Returns the max of two integers

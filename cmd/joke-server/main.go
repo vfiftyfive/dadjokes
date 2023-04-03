@@ -23,7 +23,7 @@ func main() {
 
 	http.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		// Request a joke from the joke-worker
-		resp, err := nc.Request(constants.GetJokeSubject, nil, 5*time.Second)
+		resp, err := nc.Request(constants.GetJokeSubject, nil, 15*time.Second)
 		if err != nil {
 			http.Error(w, "Error getting joke", http.StatusInternalServerError)
 			return

@@ -54,8 +54,8 @@ func main() {
 
 		var retrievedJoke joke.Joke
 		for {
-			//If the DB collection reaches 50 jokes, pick a random joke from the cache or the DB
-			if jokesCount >= 50 {
+			//If the DB collection reaches 20 jokes, pick a random joke from the cache or the DB
+			if jokesCount >= 20 {
 				retrievedJoke, err = joke.GetRandomJoke(jokesCollection, rdb)
 				if err == nil {
 					break
@@ -66,7 +66,7 @@ func main() {
 			generatedJokeTxt, err := joke.GenerateJoke(openaiClient)
 			if err != nil {
 				log.Printf("Error generating joke: %v", err)
-				continue
+				return
 			}
 
 			// Check if the joke is a duplicate
@@ -109,6 +109,8 @@ func main() {
 		err := joke.SaveJoke(jokesCollection, &retrievedJoke)
 		if err == nil {
 			joke.CacheJoke(rdb, &retrievedJoke)
+		} else {
+			log.Printf("Error saving joke: %v", err)
 		}
 	})
 
