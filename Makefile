@@ -52,9 +52,12 @@ docker-build:
 docker-up:
 	@echo "Starting Docker containers..."
 	@$(DOCKER_COMPOSE_UP)
+	
 .PHONY: docker-down
 docker-down:
 	@echo "Stopping Docker containers..."
 	@$(DOCKER_COMPOSE_DOWN)
 
+.PHONY: deploy
+deploy: docker-build docker-up
 
