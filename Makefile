@@ -61,3 +61,9 @@ docker-down:
 .PHONY: deploy
 deploy: docker-build docker-up
 
+.PHONY: clean
+clean: docker-down
+	@echo "Removing Docker images..."
+	@docker rmi joke-server:latest joke-worker:latest || true
+	@echo "Removing binaries..."
+	@rm -rf $(BIN_DIR)
