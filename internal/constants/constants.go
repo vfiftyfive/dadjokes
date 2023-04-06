@@ -1,7 +1,6 @@
 package constants
 
 import (
-	"log"
 	"os"
 	"time"
 )
@@ -13,18 +12,12 @@ const (
 )
 
 var (
-	ApiKey   string
 	NatsURL  string
 	MongoURL string
 	RedisURL string
 )
 
 func init() {
-	ApiKey = os.Getenv("OPENAI_API_KEY")
-	if ApiKey == "" {
-		log.Fatalf("OPENAI_API_KEY environment variable is not set")
-	}
-
 	NatsURL = os.Getenv("NATS_URL")
 	if NatsURL == "" {
 		NatsURL = "nats://localhost:4222"

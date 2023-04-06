@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"os"
 
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
@@ -16,9 +17,13 @@ import (
 )
 
 func main() {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		log.Fatalf("OPENAI_API_KEY environment variable is not set")
+	}
 
 	//Create a new OpenAI client
-	openaiClient := openai.NewClient(constants.ApiKey)
+	openaiClient := openai.NewClient(apiKey)
 
 	//Connect to NATS
 	nc, err := nats.Connect(constants.NatsURL)
