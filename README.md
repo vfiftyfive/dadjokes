@@ -48,3 +48,6 @@ echo "OPENAI_API_KEY=your_api_key_here" > .env
 ```bash
 make deploy
 ```
+
+## License 📄
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
