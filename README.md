@@ -49,5 +49,10 @@ echo "OPENAI_API_KEY=your_api_key_here" > .env
 make deploy
 ```
 
+4. Generate a lot of jokes:
+```bash 
+for i in {1..30}; do curl http://localhost:8080/joke; echo -e; done
+```
+
 ## License 📄
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
