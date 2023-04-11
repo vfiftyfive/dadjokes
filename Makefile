@@ -14,8 +14,9 @@ WORKER_BINARY := joke-worker
 # Define the Docker Compose commands.
 DOCKER_COMPOSE_UP := docker-compose -f $(DOCKER_COMPOSE_FILE) up -d
 DOCKER_COMPOSE_DOWN := docker-compose -f $(DOCKER_COMPOSE_FILE) down
-DOCKER_COMPOSE_BUILD_SERVER := cd cmd/joke-server && docker build -t joke-server -f Dockerfile ../..
-DOCKER_COMPOSE_BUILD_WORKER := cd cmd/joke-worker && docker build -t joke-worker -f Dockerfile ../..
+DOCKER_COMPOSE_BUILD_SERVER := docker build -t vfiftyfive/joke-server -f cmd/joke-server/Dockerfile .
+DOCKER_COMPOSE_BUILD_WORKER := docker build -t vfiftyfive/joke-worker -f cmd/joke-worker/Dockerfile .
+
 
 # Define the Go build commands.
 GO_BUILD_SERVER := go build -o $(BIN_DIR)/$(SERVER_BINARY) $(CMD_DIR)/joke-server/main.go

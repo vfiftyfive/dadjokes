@@ -5,13 +5,14 @@ FROM golang:1.20.2
 WORKDIR /app
 
 # Copy go.mod and go.sum files
-COPY ../../go.mod ../../go.sum ../../
+COPY go.mod go.sum ./
 
 # Download dependencies
 RUN go mod download
 
 # Copy the source code
-COPY . .
+COPY cmd/joke-server/main.go cmd/joke-server/
+COPY internal/ internal/
 
 # Build the binary
 RUN go build -o joke-server ./cmd/joke-server/main.go
