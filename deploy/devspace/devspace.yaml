@@ -28,7 +28,7 @@ images:
     context: ../..
   joke-worker:
     image: vfiftyfive/joke-worker
-    dockerfile: ../../cmd/joke-server/Dockerfile
+    dockerfile: ../../cmd/joke-worker/Dockerfile
     context: ../..
 
 # This is a list of `deployments` that DevSpace can create for this project
@@ -100,6 +100,11 @@ dev:
       value: 
         - configmapRef:
             name: openai-api-key
+    sync:
+    - path: ../../cmd/joke-worker:/app/cmd/joke-worker
+    - path: ../../go.mod:/app/go.mod
+    - path: ../../go.sum:/app/go.sum
+    - path: ../../internal:/app/internal
 
 hooks:
   - name: "Deploy mongodb resources"
