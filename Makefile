@@ -11,6 +11,11 @@ DOCKER_COMPOSE_FILE := $(BASE_DIR)/docker/docker-compose.yaml
 SERVER_BINARY := joke-server
 WORKER_BINARY := joke-worker
 
+# Define the registry variable and image names
+REGISTRY := vfiftyfive
+SERVER_IMAGE := $(REGISTRY)/$(SERVER_BINARY)
+WORKER_IMAGE := $(REGISTRY)/$(WORKER_BINARY)
+
 # Define the Docker Compose commands.
 DOCKER_COMPOSE_UP := docker-compose -f $(DOCKER_COMPOSE_FILE) up -d
 DOCKER_COMPOSE_DOWN := docker-compose -f $(DOCKER_COMPOSE_FILE) down
@@ -59,6 +64,12 @@ docker-down:
 	@echo "Stopping Docker containers..."
 	@$(DOCKER_COMPOSE_DOWN)
 
+.PHONY: docker-push
+docker-push:
+	@echo "Pushing Docker images to Docker Hub..."
+	@docker push $(SERVER_IMAGE)
+	@docker push $(WORKER_IMAGE)
+	
 .PHONY: deploy
 deploy: docker-build docker-up
 
