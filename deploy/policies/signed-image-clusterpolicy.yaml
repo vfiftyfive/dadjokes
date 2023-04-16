@@ -1,0 +1,25 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: check-image-keyless
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: check-image-keyless
+      match:
+        any:
+        - resources:
+            kinds:
+              - Pod
+              - Deployment
+      verifyImages:
+      - imageReferences:
+        - "docker.io/vfiftyfive/*"
+        attestors:
+        - entries:
+          - keyless:
+              subject: "*@gmail.com"
+              issuer: "https://accounts.google.com"
+              rekor:
+                url: https://rekor.sigstore.dev
