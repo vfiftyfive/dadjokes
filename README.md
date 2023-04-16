@@ -18,7 +18,7 @@ The application consists of the following components:
 4. **MongoDB**: A NoSQL database that permanently stores generated dad jokes.
 5. **NATS**: A messaging system that facilitates communication between the joke-server and joke-worker.
 
-<img width="763" alt="image" src="https://user-images.githubusercontent.com/7715763/232325538-1d0297f2-f891-403f-b657-9f04a281c8e7.png">
+![image](https://user-images.githubusercontent.com/7715763/232325923-6f0cb466-9855-4b99-af5e-14d0e34a9e86.png)
 
 ## Prerequisites ⚙️
 
