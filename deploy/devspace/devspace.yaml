@@ -94,6 +94,9 @@ dev:
     - port: "8080"
   joke-worker:
     imageSelector: vfiftyfive/joke-worker
+    command: ["./joke-worker"]
+    restartHelper:
+      inject: true
     patches:
     - op: add
       path: spec.containers[0].envFrom
@@ -102,9 +105,19 @@ dev:
             name: openai-api-key
     sync:
     - path: ../../cmd/joke-worker:/app/cmd/joke-worker
+      onUpload:
+        restartContainer: true
+        exec:
+        - command: |-
+            go build -o joke-worker ./cmd/joke-worker/main.go
     - path: ../../go.mod:/app/go.mod
     - path: ../../go.sum:/app/go.sum
     - path: ../../internal:/app/internal
+      onUpload:
+        restartContainer: true
+        exec:
+        - command: |-
+            go build -o joke-worker ./cmd/joke-worker/main.go
 
 hooks:
   - name: "Deploy mongodb resources"
@@ -190,3 +203,6 @@ hooks:
   - name: "Delete redis resources"
     command: "kubectl delete redis --all"
     events: ["before:purge"]
+  - name: "Delete PVCs"
+    command: "kubectl delete pvc --all"
+    events: ["after:purge"]
