@@ -6,10 +6,11 @@ pipelines:
   # This is the pipeline for the main command: `devspace dev` (or `devspace run-pipeline dev`)
   dev:
     run: |-
-      run_dependencies --all       # 1. Deploy any projects this project needs (see "dependencies")
-      ensure_pull_secrets --all    # 2. Ensure pull secrets
-      create_deployments --all     # 3. Deploy Helm charts and manifests specfied as "deployments"
-      start_dev --all              # 4. Start dev mode  (see "dev" section) 
+      run_dependencies --all     
+      ensure_pull_secrets --all
+      create_deployments mongodb-operator redis-operator
+      create_deployments nats joke-server joke-worker custom-resources
+      start_dev --all
 
   # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
   deploy:
@@ -85,6 +86,15 @@ deployments:
                 value: mongodb://demo:spectrocloud@mongodb-svc:27017
               - name: REDIS_URL
                 value: redis:6379
+              - name: OPENAI_API_KEY
+                valueFrom:
+                  configMapKeyRef:
+                    name: openai-api-key
+                    key: OPENAI_API_KEY
+  custom-resources:
+    kubectl:
+      manifests:
+      - custom-resources/
 
 # This is a list of `dev` containers that are based on the containers created by your deployments
 dev:
@@ -97,12 +107,13 @@ dev:
     command: ["./joke-worker"]
     restartHelper:
       inject: true
-    patches:
-    - op: add
-      path: spec.containers[0].envFrom
-      value: 
-        - configmapRef:
-            name: openai-api-key
+    # add envFrom with JSON patch
+    # patches:
+    # - op: add
+    #   path: spec.containers[0].envFrom
+    #   value: 
+    #     - configmapRef:
+    #         name: openai-api-key
     sync:
     - path: ../../cmd/joke-worker:/app/cmd/joke-worker
       onUpload:
@@ -120,83 +131,6 @@ dev:
             go build -o joke-worker ./cmd/joke-worker/main.go
 
 hooks:
-  - name: "Deploy mongodb resources"
-    command: |
-      kubectl apply -f - <<EOF
-      ---
-      apiVersion: mongodbcommunity.mongodb.com/v1
-      kind: MongoDBCommunity
-      metadata:
-        name: mongodb
-        namespace: dev
-      spec:
-        members: 1
-        type: ReplicaSet
-        version: "6.0.5"
-        security:
-          authentication:
-            modes: ["SCRAM"]
-        users:
-          - name: demo
-            db: admin
-            passwordSecretRef: # a reference to the secret that will be used to generate the user's password
-              name: user-password
-            roles:
-              - name: clusterAdmin
-                db: admin
-              - name: userAdminAnyDatabase
-                db: admin
-              - name: dbAdminAnyDatabase
-                db: admin
-              - name: readWriteAnyDatabase
-                db: admin
-            scramCredentialsSecretName: user
-        additionalMongodConfig:
-          storage.wiredTiger.engineConfig.journalCompressor: zlib
-
-      # the user credentials will be generated from this secret
-      # once the credentials are generated, this secret is no longer required
-      ---
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: user-password
-        namespace: dev
-      type: Opaque
-      stringData:
-        password: spectrocloud
-      EOF
-    events: ["after:deploy"]
-  - name: "Deploy redis resources"
-    command: |
-      kubectl apply -f - <<EOF
-      ---
-      apiVersion: redis.redis.opstreelabs.in/v1beta1
-      kind: Redis
-      metadata:
-        name: redis
-        namespace: dev
-      spec:
-        kubernetesConfig:
-          image: 'quay.io/opstree/redis:v7.0.5'
-          imagePullPolicy: IfNotPresent
-        storage:
-          volumeClaimTemplate:
-            spec:
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 1Gi
-        redisExporter:
-          enabled: true
-          image: 'quay.io/opstree/redis-exporter:v1.44.0'
-          imagePullPolicy: IfNotPresent
-        securityContext:
-          runAsUser: 1000
-          fsGroup: 1000
-      EOF
-    events: ["after:deploy"]
   - name: "Decrypt OPENAI_API_KEY"
     command: "sops -d openai-api-key.enc.yaml | kubectl apply -f -"
     events: ["before:deploy"]
