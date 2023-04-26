@@ -55,7 +55,7 @@ make deploy
 
 ### Kubernetes ☸
 
-1. Clone the repository and change the directory to deploy/devspace:
+1. Clone the repository and change the directory to `deploy/devspace`:
 
 ```bash
 git clone https://github.com/vfiftyfive/dadjokes.git
