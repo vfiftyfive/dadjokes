@@ -5,7 +5,7 @@ BASE_DIR := $(shell pwd)
 # Define the paths for the binaries, source code, and configuration files.
 BIN_DIR := $(BASE_DIR)/bin
 CMD_DIR := $(BASE_DIR)/cmd
-DOCKER_COMPOSE_FILE := $(BASE_DIR)/docker/docker-compose.yaml
+DOCKER_COMPOSE_FILE := $(BASE_DIR)/deploy/docker/docker-compose.yaml
 
 # Define the names for the binaries.
 SERVER_BINARY := joke-server
