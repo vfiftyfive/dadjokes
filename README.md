@@ -40,10 +40,10 @@ To deploy the Dad Joke Generator, follow these steps:
 
 ```bash
 git clone https://github.com/vfiftyfive/dadjokes.git
-cd dadjokes/docker
+cd dadjokes/deploy/docker
 ```
 
-2. Create a .env file in the dadjokes/deploy/docker directory, with your OpenAI API key:
+2. Create a .env file in the `dadjokes/deploy/docker` directory, with your OpenAI API key:
 ```bash
 echo "OPENAI_API_KEY=your_api_key_here" > .env
 ```
