@@ -27,7 +27,7 @@ Before you can deploy the Dad Joke Generator, you'll need the following:
 
 - Docker and Docker Compose installed on your machine
 - An OpenAI API key
-- Access to a Kubernetes cluster, helm and kubectl installed if you want to deploy the application on Kubernetes
+- Access to a Kubernetes cluster, `helm` and `kubectl` installed if you want to deploy the application on Kubernetes
 - `gpg` command-line available
 
 ## Deployment 🚀
