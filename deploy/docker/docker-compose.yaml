@@ -4,7 +4,7 @@ services:
   joke-server:
     image: joke-server:latest
     build:
-      context: ../
+      context: ../../
       dockerfile: ./cmd/joke-server/Dockerfile
     ports:
       - "8080:8080"
@@ -19,7 +19,7 @@ services:
   joke-worker:
     image: joke-worker:latest
     build:
-      context: ../
+      context: ../../
       dockerfile: ./cmd/joke-worker/Dockerfile
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
