@@ -34,8 +34,8 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: user-password
+  name: demo
   namespace: dev
 type: Opaque
 stringData:
-  password: spectrocloud
+  password: spectro

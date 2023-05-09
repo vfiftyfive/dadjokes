@@ -49,6 +49,12 @@ deployments:
       chart:
         name: nats
         repo: https://nats-io.github.io/k8s/helm/charts/
+      values:
+        auth:
+          enabled: true
+          basic: 
+            users:
+            - 
   joke-server:
     # This deployment uses `helm` but you can also define `kubectl` deployments or kustomizations
     helm:

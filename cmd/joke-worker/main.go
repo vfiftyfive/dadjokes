@@ -25,16 +25,18 @@ func main() {
 	//Create a new OpenAI client
 	openaiClient := openai.NewClient(apiKey)
 
-	//Connect to NATS
-	nc, err := nats.Connect(constants.NatsURL)
+	// Connect to NATS
+	nc, err := nats.Connect(constants.NatsURL, nats.UserInfo(constants.NatsUsername, constants.NatsPassword))
+
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
 	defer nc.Close()
 
-	//Connect to Redis
+	// Connect to Redis
 	rdb := redis.NewClient(&redis.Options{
-		Addr: constants.RedisURL,
+		Addr:     constants.RedisURL,
+		Password: constants.RedisPassword,
 	})
 	defer rdb.Close()
 
@@ -44,8 +46,16 @@ func main() {
 		log.Fatalf("Failed to connect to Redis: %v with connection address set to %v", err, constants.RedisURL)
 	}
 
-	//Connect to MongoDB
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(constants.MongoURL))
+	// Connect to MongoDB
+	clientOptions := options.Client().ApplyURI(constants.MongoURL)
+	if constants.MongoUsername != "" && constants.MongoPassword != "" {
+		clientOptions.Auth = &options.Credential{
+			Username:      constants.MongoUsername,
+			Password:      constants.MongoPassword,
+			AuthMechanism: constants.MongoAuthMechanism,
+		}
+	}
+	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}

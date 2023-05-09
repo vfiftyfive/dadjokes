@@ -1,2 +1,17 @@
-*sops.yaml
-*.env
+.gitignore
+env.sh
+tests/*
+bin/*
+.vscode/*
+.env
+openai-api-key.yaml
+.sops.yaml
+helm/
+*.html
+*.tpl
+demo.txt
+
+# Ignore DevSpace cache and log folder
+.devspace/
+
+

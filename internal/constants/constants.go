@@ -15,6 +15,13 @@ var (
 	NatsURL  string
 	MongoURL string
 	RedisURL string
+
+	RedisPassword      string
+	NatsUsername       string
+	NatsPassword       string
+	MongoUsername      string
+	MongoPassword      string
+	MongoAuthMechanism string
 )
 
 func init() {
@@ -34,5 +41,14 @@ func init() {
 	} else {
 		RedisURL = RedisEnvURL
 	}
+
+	RedisPassword = os.Getenv("REDIS_PASSWORD")
+
+	NatsUsername = os.Getenv("NATS_USERNAME")
+	NatsPassword = os.Getenv("NATS_PASSWORD")
+
+	MongoUsername = os.Getenv("MONGO_USERNAME")
+	MongoPassword = os.Getenv("MONGO_PASSWORD")
+	MongoAuthMechanism = os.Getenv("MONGO_AUTH_MECHANISM")
 
 }

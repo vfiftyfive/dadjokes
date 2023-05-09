@@ -11,6 +11,8 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NATS_URL=nats://nats:4222
+      - NATS_USERNAME=${NATS_USERNAME}
+      - NATS_PASSWORD=${NATS_PASSWORD}
     depends_on:
       - nats
     networks:
@@ -24,8 +26,13 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NATS_URL=nats://nats:4222
+      - NATS_USERNAME=${NATS_USERNAME}
+      - NATS_PASSWORD=${NATS_PASSWORD}
       - MONGO_URL=mongodb://mongo:27017
+      - MONGO_USERNAME=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
       - REDIS_URL=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     depends_on:
       - nats
       - mongo
@@ -37,6 +44,10 @@ services:
     image: nats:latest
     ports:
       - "4222:4222"
+    environment:
+      - NATS_ENABLE_AUTH=yes
+      - NATS_USERNAME=${NATS_USERNAME}
+      - NATS_PASSWORD=${NATS_PASSWORD}
     networks:
       - joke-network
 
@@ -44,6 +55,9 @@ services:
     image: mongo:latest
     ports:
       - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     networks:
       - joke-network
 
@@ -51,6 +65,7 @@ services:
     image: redis:latest
     ports:
       - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     networks:
       - joke-network
 

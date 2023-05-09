@@ -15,7 +15,8 @@ import (
 func main() {
 
 	// Connect to NATS
-	nc, err := nats.Connect(constants.NatsURL)
+	// Connect to NATS
+	nc, err := nats.Connect(constants.NatsURL, nats.UserInfo(constants.NatsUsername, constants.NatsPassword))
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
