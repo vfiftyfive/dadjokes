@@ -37,6 +37,7 @@ func main() {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     constants.RedisURL,
 		Password: constants.RedisPassword,
+		Username: constants.RedisUsername,
 	})
 	defer rdb.Close()
 

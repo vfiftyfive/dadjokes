@@ -17,6 +17,7 @@ var (
 	RedisURL string
 
 	RedisPassword      string
+	RedisUsername      string
 	NatsUsername       string
 	NatsPassword       string
 	MongoUsername      string
@@ -43,6 +44,7 @@ func init() {
 	}
 
 	RedisPassword = os.Getenv("REDIS_PASSWORD")
+	RedisUsername = os.Getenv("REDIS_USERNAME")
 
 	NatsUsername = os.Getenv("NATS_USERNAME")
 	NatsPassword = os.Getenv("NATS_PASSWORD")
