@@ -43,7 +43,8 @@ func init() {
 		RedisURL = RedisEnvURL
 	}
 
-	RedisPassword = os.Getenv("REDIS_PASSWORD")
+	// RedisPassword = os.Getenv("REDIS_PASSWORD")
+	RedisPassword = "spectro"
 	// RedisUsername = os.Getenv("REDIS_USERNAME")
 	RedisUsername = "default"
 	NatsUsername = os.Getenv("NATS_USERNAME")
