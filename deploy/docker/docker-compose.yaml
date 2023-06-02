@@ -2,7 +2,8 @@ version: "3.8"
 
 services:
   joke-server:
-    image: joke-server:latest
+    image: test-server:latest
+    # image: vfiftyfive/joke-server
     build:
       context: ../../
       dockerfile: ./cmd/joke-server/Dockerfile
@@ -19,7 +20,8 @@ services:
       - joke-network
 
   joke-worker:
-    image: joke-worker:latest
+    image: test-worker:latest
+    # image: vfiftyfive/joke-worker
     build:
       context: ../../
       dockerfile: ./cmd/joke-worker/Dockerfile
