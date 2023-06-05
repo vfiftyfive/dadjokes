@@ -19,8 +19,8 @@ WORKER_IMAGE := $(REGISTRY)/$(WORKER_BINARY)
 # Define the Docker Compose commands.
 DOCKER_COMPOSE_UP := docker-compose -f $(DOCKER_COMPOSE_FILE) up -d
 DOCKER_COMPOSE_DOWN := docker-compose -f $(DOCKER_COMPOSE_FILE) down
-DOCKER_COMPOSE_BUILD_SERVER := docker build -t vfiftyfive/joke-server -f cmd/joke-server/Dockerfile .
-DOCKER_COMPOSE_BUILD_WORKER := docker build -t vfiftyfive/joke-worker -f cmd/joke-worker/Dockerfile .
+DOCKER_COMPOSE_BUILD_SERVER := docker build -t test-server -f cmd/joke-server/Dockerfile .
+DOCKER_COMPOSE_BUILD_WORKER := docker build -t test-worker -f cmd/joke-worker/Dockerfile .
 
 
 # Define the Go build commands.
@@ -76,6 +76,6 @@ deploy: docker-build docker-up
 .PHONY: clean
 clean: docker-down
 	@echo "Removing Docker images..."
-	@docker rmi joke-server:latest joke-worker:latest || true
+	@docker rmi test-server:latest test-worker:latest || true
 	@echo "Removing binaries..."
 	@rm -rf $(BIN_DIR)
