@@ -1,24 +1,12 @@
-# Set the base image
-FROM golang:latest
-
-# Set the working directory
+FROM golang:1.20 AS builder
 WORKDIR /app
-
-# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
-
-# Copy the source code
 COPY cmd/joke-server/main.go cmd/joke-server/
 COPY internal/ internal/
-
-# Build the binary
 RUN go build -o joke-server ./cmd/joke-server/main.go
 
-# Expose the port
+FROM gcr.io/distroless/base-debian10
+COPY --from=builder /app/joke-server /joke-server
 EXPOSE 8080
-
-# Run the binary
-CMD ["./joke-server"]
+ENTRYPOINT ["/joke-server"]
