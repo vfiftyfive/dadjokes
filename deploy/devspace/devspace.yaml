@@ -6,8 +6,8 @@ vars:
     source: env
   TAG: $(git describe --always)
   NAMESPACE: ${DEVSPACE_NAMESPACE}
-  JOKE_SERVER: tylergillson/joke-server:${TAG}
-  JOKE_WORKER: tylergillson/joke-worker:${TAG}
+  JOKE_SERVER: vfiftyfive/joke-server:${TAG}
+  JOKE_WORKER: vfiftyfive/joke-worker:${TAG}
 
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
