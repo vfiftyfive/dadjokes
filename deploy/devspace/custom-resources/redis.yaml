@@ -2,7 +2,6 @@ apiVersion: redis.redis.opstreelabs.in/v1beta1
 kind: Redis
 metadata:
   name: redis
-  namespace: dev
 spec:
   kubernetesConfig:
     image: 'quay.io/opstree/redis:v7.0.5'
@@ -21,4 +20,3 @@ spec:
     imagePullPolicy: IfNotPresent
   securityContext:
     runAsUser: 1000
-    fsGroup: 1000
