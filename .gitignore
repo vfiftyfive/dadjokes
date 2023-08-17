@@ -1,2 +1,3 @@
 *sops.yaml
 *.env
+*.devspace
