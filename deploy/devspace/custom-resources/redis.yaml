@@ -19,6 +19,3 @@ spec:
     enabled: true
     image: 'quay.io/opstree/redis-exporter:v1.44.0'
     imagePullPolicy: IfNotPresent
-  securityContext:
-    runAsUser: 1000
-    fsGroup: 1000

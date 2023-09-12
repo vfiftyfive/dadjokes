@@ -8,6 +8,7 @@ pipelines:
     run: |-
       run_dependencies --all     
       ensure_pull_secrets --all
+      build_images --all -t $(git describe --always)    # 3. Build, tag (git commit hash) and push all images (see "images")
       create_deployments mongodb-operator redis-operator
       create_deployments nats joke-server joke-worker custom-resources
       start_dev --all
@@ -24,11 +25,11 @@ pipelines:
 # We recommend to skip image building during development (devspace dev) as much as possible
 images:
   joke-server:
-    image: test-server
+    image: joke-server
     dockerfile: ../../cmd/joke-server/Dockerfile
     context: ../..
   joke-worker:
-    image: test-worker
+    image: joke-worker
     dockerfile: ../../cmd/joke-worker/Dockerfile
     context: ../..
 
@@ -66,7 +67,7 @@ deployments:
       # You may also use `valuesFiles` to load values from files, e.g. valuesFiles: ["values.yaml"]
       values:
         containers:
-          - image: test-server
+          - image: joke-server
             env: 
             - name: NATS_URL
               value: nats://nats:4222
@@ -84,7 +85,7 @@ deployments:
       # You may also use `valuesFiles` to load values from files, e.g. valuesFiles: ["values.yaml"]
       values:
         containers:
-          - image: test-worker
+          - image: joke-worker
             env: 
               - name: NATS_URL
                 value: nats://nats:4222
@@ -105,11 +106,11 @@ deployments:
 # This is a list of `dev` containers that are based on the containers created by your deployments
 dev:
   joke-server:
-    imageSelector: test-server
+    imageSelector: joke-server
     ports:
     - port: "8080"
   joke-worker:
-    imageSelector: test-worker
+    imageSelector: joke-worker
     command: ["./joke-worker"]
     restartHelper:
       inject: true
