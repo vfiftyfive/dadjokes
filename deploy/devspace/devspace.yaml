@@ -132,7 +132,7 @@ dev:
 
 hooks:
   - name: "Decrypt OPENAI_API_KEY"
-    command: "sops -d openai-api-key.enc.yaml | kubectl apply -f -"
+    command: "sops -d openai-api-key.enc.yaml | sed '/data: |/d' | kubectl apply -f -"
     events: ["before:deploy"]
   - name: "Delete redis resources"
     command: "kubectl delete redis --all"
