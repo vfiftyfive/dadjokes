@@ -81,7 +81,7 @@ curl -L -o devspace "https://github.com/loft-sh/devspace/releases/latest/downloa
 ```bash
 ORG="mozilla"
 REPO="sops"
-latest_release=$(curl --silent "https://api.github.com/repos/${ORG}/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+latest_release=$(curl -Ls "https://api.github.com/repos/${ORG}/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
 
 # AMD64
 curl -L https://github.com/mozilla/sops/releases/download/v${latest_release}/sops_${latest_release}_amd64.deb -o sops.deb && sudo apt-get install ./sops.deb && rm sops.deb
@@ -110,7 +110,7 @@ EOF
 
 6. Create an encrypted Kubernetes ConfigMap with your OpenAI API key:
 ```bash
-kubectl create configmap openai-api-key --from-literal=OPENAI_API_KEY=your_api_key_here --dry-run=client -o yaml | sops -e /dev/stdin > deploy/devspace/openai-api-key.enc.yaml
+kubectl create configmap openai-api-key --from-literal=OPENAI_API_KEY=your_api_key_here --dry-run=client -o yaml | sops -e /dev/stdin > openai-api-key.enc.yaml
 ```
 
 4. Specify a namespace to use with DevSpace
