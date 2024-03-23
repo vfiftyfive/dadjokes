@@ -75,7 +75,7 @@ cd dadjokes/deploy/devspace
 curl -L -o devspace "https://github.com/loft-sh/devspace/releases/latest/download/devspace-linux-amd64" && sudo install -c -m 0755 devspace /usr/local/bin
 
 # ARM64
-curl -L -o devspace "https://github.com/loft-sh/devspace/releases/latest/download/devspace-linux-arm64" && sudo install -c -m 0755 devspace /usr/local/bin
+curl -L -o devspace "https://github.com/loft-sh/devspace/releases/latest/download/devspace-darwin-arm64" && sudo install -c -m 0755 devspace /usr/local/bin
 ```
 3. Install SOPS:
 ```bash
