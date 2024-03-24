@@ -40,7 +40,7 @@ func GenerateJoke(client *openai.Client) (string, error) {
 		default:
 			resp, err := client.CreateCompletion(context.Background(), openai.CompletionRequest{
 				Prompt:    "Tell me a dad joke",
-				Model:     "text-davinci-003",
+				Model:     "gpt-3.5-turbo-instruct",
 				MaxTokens: 256,
 			})
 
