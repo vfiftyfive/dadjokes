@@ -8,6 +8,7 @@ pipelines:
     run: |-
       run_dependencies --all     
       ensure_pull_secrets --all
+      build_images --all -t $(git describe --always)
       create_deployments mongodb-operator redis-operator
       create_deployments nats joke-server joke-worker custom-resources
       start_dev --all
@@ -132,7 +133,7 @@ dev:
 
 hooks:
   - name: "Decrypt OPENAI_API_KEY"
-    command: "sops -d openai-api-key.enc.yaml | kubectl apply -f -"
+    command: "sops -d openai-api-key.enc.yaml | sed '/^data: |$/d' | kubectl apply -f -"
     events: ["before:deploy"]
   - name: "Delete redis resources"
     command: "kubectl delete redis --all"
