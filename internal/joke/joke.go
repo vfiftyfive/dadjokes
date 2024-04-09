@@ -38,10 +38,15 @@ func GenerateJoke(client *openai.Client) (string, error) {
 		case <-ctx.Done():
 			return "", errors.New("GPT-3 API call timed out")
 		default:
-			resp, err := client.CreateCompletion(context.Background(), openai.CompletionRequest{
-				Prompt:    "Tell me a dad joke",
-				Model:     "gpt-3.5-turbo-instruct",
-				MaxTokens: 256,
+			message := []openai.ChatCompletionMessage{
+				{
+					Role: openai.ChatMessageRoleUser,
+					Content: "Tell me a dad joke",
+				},
+			}
+			resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+				Model: openai.GPT4TurboPreview,
+				Messages: message,
 			})
 
 			if err != nil {
@@ -53,7 +58,7 @@ func GenerateJoke(client *openai.Client) (string, error) {
 				continue
 			}
 			reWhitespace := regexp.MustCompile(`[\s\n\t]+`)
-			joke := reWhitespace.ReplaceAllString(resp.Choices[0].Text, " ")
+			joke := reWhitespace.ReplaceAllString(resp.Choices[0].Message.Content, " ")
 			return joke, nil
 		}
 	}

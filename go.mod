@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/nats-io/nats.go v1.25.0
 	github.com/redis/go-redis/v9 v9.0.3
-	github.com/sashabaranov/go-openai v1.5.8
+	github.com/sashabaranov/go-openai v1.20.5
 	github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c
 	go.mongodb.org/mongo-driver v1.11.3
 )
