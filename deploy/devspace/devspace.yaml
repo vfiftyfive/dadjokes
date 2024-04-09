@@ -1,6 +1,14 @@
 version: v2beta1
 name: dadjokes
 
+vars:
+  OPENAI_API_KEY:
+    source: env
+  TAG: $(git describe --always)
+  NAMESPACE: ${DEVSPACE_NAMESPACE}
+  JOKE_SERVER: vfiftyfive/joke-server:${TAG}
+  JOKE_WORKER: vfiftyfive/joke-worker:${TAG}
+
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
   # This is the pipeline for the main command: `devspace dev` (or `devspace run-pipeline dev`)
@@ -20,16 +28,18 @@ pipelines:
       build_images --all -t $(git describe --always)    # 3. Build, tag (git commit hash) and push all images (see "images")
       create_deployments mongodb-operator redis-operator
       create_deployments nats joke-server joke-worker custom-resources
-
+  build: |-
+    run_dependencies --all
+    build_images --all -t $(git describe --always)
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
 images:
   joke-server:
-    image: vfiftyfive/joke-server
+    image: ${JOKE_SERVER}
     dockerfile: ../../cmd/joke-server/Dockerfile
     context: ../..
   joke-worker:
-    image: vfiftyfive/joke-worker
+    image: ${JOKE_WORKER}
     dockerfile: ../../cmd/joke-worker/Dockerfile
     context: ../..
 
@@ -61,7 +71,7 @@ deployments:
       # You may also use `valuesFiles` to load values from files, e.g. valuesFiles: ["values.yaml"]
       values:
         containers:
-          - image: vfiftyfive/joke-server
+          - image: ${JOKE_SERVER}
             env: 
             - name: NATS_URL
               value: nats://nats:4222
@@ -79,7 +89,7 @@ deployments:
       # You may also use `valuesFiles` to load values from files, e.g. valuesFiles: ["values.yaml"]
       values:
         containers:
-          - image: vfiftyfive/joke-worker
+          - image: ${JOKE_WORKER}
             env: 
               - name: NATS_URL
                 value: nats://nats:4222
@@ -100,11 +110,11 @@ deployments:
 # This is a list of `dev` containers that are based on the containers created by your deployments
 dev:
   joke-server:
-    imageSelector: vfiftyfive/joke-server
+    imageSelector: ${JOKE_SERVER}
     ports:
     - port: "8080"
   joke-worker:
-    imageSelector: vfiftyfive/joke-worker
+    imageSelector: ${JOKE_WORKER}
     command: ["./joke-worker"]
     restartHelper:
       inject: true
@@ -133,11 +143,19 @@ dev:
 
 hooks:
   - name: "Decrypt OPENAI_API_KEY"
-    command: "sops -d openai-api-key.enc.yaml | sed '/data: |/d' | kubectl apply -f -"
+    command: "sops -d openai-api-key.enc.yaml | sed '/data: |/d' | kubectl apply -n ${NAMESPACE} -f -"
     events: ["before:deploy"]
   - name: "Delete redis resources"
-    command: "kubectl delete redis --all"
+    command: "kubectl delete -n ${NAMESPACE} redis --all"
     events: ["before:purge"]
   - name: "Delete PVCs"
-    command: "kubectl delete pvc --all"
+    command: "kubectl delete -n ${NAMESPACE} pvc --all"
     events: ["after:purge"]
+
+commands:
+  encrypt-openai-secret: |-
+    kubectl create secret generic openai-api-key \
+        --from-literal=OPENAI_API_KEY=${OPENAI_API_KEY} \
+        --dry-run=client -o yaml > openai-secret.yaml && \
+    sops -e openai-secret.yaml > openai-api-key.enc.yaml && \
+    rm openai-secret.yaml
