@@ -25,6 +25,7 @@ func main() {
 		// Request a joke from the joke-worker
 		resp, err := nc.Request(constants.GetJokeSubject, nil, 15*time.Second)
 		if err != nil {
+			log.Printf("Error getting joke: %v", err) // Log error
 			http.Error(w, "Error getting joke", http.StatusInternalServerError)
 			return
 		}
@@ -32,6 +33,7 @@ func main() {
 		joke := joke.Joke{}
 		err = json.Unmarshal(resp.Data, &joke)
 		if err != nil {
+			log.Printf("Error unmarshalling joke: %v", err)
 			http.Error(w, "Error unmarshalling joke", http.StatusInternalServerError)
 			return
 		}
