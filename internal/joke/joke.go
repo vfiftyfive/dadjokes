@@ -11,14 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/redis/go-redis/v9"
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/texttheater/golang-levenshtein/levenshtein"
-	"github.com/vfiftyfive/dadjokes/internal/constants"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Joke represents a joke
@@ -27,7 +25,7 @@ type Joke struct {
 	Text string
 }
 
-// Generates a joke using OpenAI's GPT-3 API
+// Generates a joke using OpenAI's GPT-4 API
 func GenerateJoke(client *openai.Client) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -36,19 +34,18 @@ func GenerateJoke(client *openai.Client) (string, error) {
 	for {
 		select {
 		case <-ctx.Done():
-			return "", errors.New("GPT-3 API call timed out")
+			return "", errors.New("GPT-4 API call timed out")
 		default:
 			message := []openai.ChatCompletionMessage{
 				{
-					Role: openai.ChatMessageRoleUser,
+					Role:    openai.ChatMessageRoleUser,
 					Content: "Tell me a dad joke",
 				},
 			}
 			resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
-				Model: openai.GPT4TurboPreview,
+				Model:    openai.GPT4TurboPreview,
 				Messages: message,
 			})
-
 			if err != nil {
 				log.Printf("Error generating joke: %v", err)
 				return "", err
@@ -65,64 +62,80 @@ func GenerateJoke(client *openai.Client) (string, error) {
 }
 
 // Saves a joke to the database
-func SaveJoke(jokesCollection *mongo.Collection, joke *Joke) error {
-	res, err := jokesCollection.InsertOne(context.Background(), joke)
-	if err != nil {
-		log.Printf("Error saving joke: %v", err)
-		return err
+func SaveJoke(ctx context.Context, svc *dynamodb.Client, joke *Joke) error {
+	input := &dynamodb.PutItemInput{
+		TableName: aws.String("JokesTable"),
+		Item: map[string]types.AttributeValue{
+			"ID":   &types.AttributeValueMemberS{Value: joke.ID},
+			"Text": &types.AttributeValueMemberS{Value: joke.Text},
+		},
 	}
-	insertedID := res.InsertedID.(primitive.ObjectID)
-	joke.ID = insertedID.Hex()
+
+	_, err := svc.PutItem(ctx, input)
+	if err != nil {
+		log.Printf("Error saving joke to DynamoDB: %v", err)
+		return fmt.Errorf("error saving joke to DynamoDB: %v", err)
+	}
 	return nil
 }
 
-// Returns a random joke from the database
-func GetRandomJoke(jokesCollection *mongo.Collection, rdb *redis.Client) (Joke, error) {
-	jokeFromDB := getJokeFromDB(jokesCollection)
-	cacheKey := fmt.Sprintf("joke:%s", jokeFromDB.ID)
-	jokeBytes, err := rdb.Get(context.Background(), cacheKey).Bytes()
-	if err == nil {
-		jokeFromCache := Joke{}
-		json.Unmarshal(jokeBytes, &jokeFromCache)
-		return jokeFromCache, nil
-	} else if err != redis.Nil {
+// GetRandomJoke retrieves a random joke from the Redis cache
+func GetRandomJoke(ctx context.Context, rdb *redis.Client) (Joke, error) {
+	var joke Joke
+
+	// Retrieve all joke IDs from Redis (from the 'jokeIDs' set)
+	jokeIDs, err := rdb.SMembers(ctx, "jokeIDs").Result()
+	if err != nil {
+		log.Printf("Error retrieving joke IDs from cache: %v", err)
+		return joke, err
+	}
+
+	if len(jokeIDs) == 0 {
+		return joke, errors.New("no jokes available in cache")
+	}
+
+	// Select a random joke ID
+	rand.Seed(time.Now().UnixNano())
+	randomIndex := rand.Intn(len(jokeIDs))
+	randomJokeID := jokeIDs[randomIndex]
+
+	// Fetch the joke data from Redis using the selected joke ID
+	jokeData, err := rdb.Get(ctx, "joke:"+randomJokeID).Bytes()
+	if err != nil {
 		log.Printf("Error retrieving joke from cache: %v", err)
-
-		return Joke{}, err
+		return joke, err
 	}
 
-	return jokeFromDB, nil
+	err = json.Unmarshal(jokeData, &joke)
+	if err != nil {
+		log.Printf("Error unmarshalling joke: %v", err)
+		return joke, err
+	}
+
+	return joke, nil
 }
 
-// Returns a random joke from the database
-func getJokeFromDB(jokesCollection *mongo.Collection) Joke {
-	joke := Joke{}
-
-	count, err := jokesCollection.CountDocuments(context.Background(), bson.M{})
-	if err != nil {
-		log.Printf("Error retrieving joke: %v", err)
-	}
-
-	opts := options.FindOne().SetSkip(int64(rand.Intn(int(count))))
-	err = jokesCollection.FindOne(context.Background(), bson.M{}, opts).Decode(&joke)
-	if err != nil {
-		log.Printf("Error retrieving joke: %v", err)
-	}
-
-	return joke
-}
-
-// Saves a joke to the cache and the DB
-func CacheJoke(rdb *redis.Client, joke *Joke) error {
-	// Add the new joke to the cache
+// CacheJoke adds the new joke to the cache and tracks its ID for random retrieval
+func CacheJoke(ctx context.Context, rdb *redis.Client, joke *Joke) error {
 	jokeBytes, err := json.Marshal(joke)
 	if err != nil {
+		log.Printf("Failed to marshal joke: %v", err)
 		return fmt.Errorf("failed to marshal joke: %v", err)
 	}
-	_, err = rdb.Set(context.Background(), fmt.Sprintf("joke:%s", joke.ID), jokeBytes, constants.RedisTTL).Result()
+
+	_, err = rdb.Set(ctx, fmt.Sprintf("joke:%s", joke.ID), jokeBytes, -1).Result() // Using -1 for no expiration
 	if err != nil {
+		log.Printf("Failed to set joke in cache: %v", err)
 		return fmt.Errorf("failed to set joke in cache: %v", err)
 	}
+
+	// Add the joke ID to a set for random access
+	_, err = rdb.SAdd(ctx, "jokeIDs", joke.ID).Result()
+	if err != nil {
+		log.Printf("Failed to add joke ID to set: %v", err)
+		return fmt.Errorf("failed to add joke ID to set: %v", err)
+	}
+
 	return nil
 }
 
