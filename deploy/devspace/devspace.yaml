@@ -38,10 +38,14 @@ pipelines:
 images:
   joke-server:
     image: ${JOKE_SERVER}
+    buildKit: 
+      args: ["--platform=linux/amd64,linux/arm64"]
     dockerfile: ../../cmd/joke-server/Dockerfile
     context: ../..
   joke-worker:
-    image: ${JOKE_WORKER}
+    image: ${JOKE_WORKER}build
+    buildKit: 
+      args: ["--platform=linux/amd64,linux/arm64"]
     dockerfile: ../../cmd/joke-worker/Dockerfile
     context: ../..
 
@@ -54,10 +58,12 @@ deployments:
         repo: https://ot-container-kit.github.io/helm-charts/
   dynamodb-operator:
     helm:
-      name: oci://public.ecr.aws/aws-controllers-k8s/dynamodb-chart
-      username: AWS
-      password: ${ECR_PASSWORD}
-      version: 1.2.10
+      chart:
+        name: ack-dynamodb-controller
+        repo: oci://public.ecr.aws/aws-controllers-k8s/dynamodb-chart
+        username: AWS
+        password: ${ECR_PASSWORD}
+        version: 1.2.10
   nats:
     helm:
       chart:
