@@ -8,6 +8,8 @@ vars:
   NAMESPACE: ${DEVSPACE_NAMESPACE}
   JOKE_SERVER: vfiftyfive/joke-server:${TAG}
   JOKE_WORKER: vfiftyfive/joke-worker:${TAG}
+  ECR_PASSWORD: $(aws ecr-public get-login-password --region us-east-1)
+
 
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
@@ -16,7 +18,7 @@ pipelines:
     run: |-
       run_dependencies --all     
       ensure_pull_secrets --all
-      create_deployments mongodb-operator redis-operator
+      create_deployments redis-operator dynamodb-operator
       create_deployments nats joke-server joke-worker custom-resources
       start_dev --all
 
@@ -26,7 +28,7 @@ pipelines:
       run_dependencies --all                            # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all                         # 2. Ensure pull secrets
       build_images --all -t $(git describe --always)    # 3. Build, tag (git commit hash) and push all images (see "images")
-      create_deployments mongodb-operator redis-operator
+      create_deployments  redis-operator dynamodb-operator
       create_deployments nats joke-server joke-worker custom-resources
   build: |-
     run_dependencies --all
@@ -45,16 +47,17 @@ images:
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
-  mongodb-operator:
-    helm:
-      chart:
-        name: community-operator
-        repo: https://mongodb.github.io/helm-charts
   redis-operator:
     helm:
       chart:
         name: redis-operator
         repo: https://ot-container-kit.github.io/helm-charts/
+  dynamodb-operator:
+    helm:
+      name: oci://public.ecr.aws/aws-controllers-k8s/dynamodb-chart
+      username: AWS
+      password: ${ECR_PASSWORD}
+      version: 1.2.10
   nats:
     helm:
       chart:
@@ -93,8 +96,6 @@ deployments:
             env: 
               - name: NATS_URL
                 value: nats://nats:4222
-              - name: MONGO_URL
-                value: mongodb://demo:spectrocloud@mongodb-svc:27017
               - name: REDIS_URL
                 value: redis:6379
               - name: OPENAI_API_KEY
@@ -118,13 +119,6 @@ dev:
     command: ["./joke-worker"]
     restartHelper:
       inject: true
-    # add envFrom with JSON patch
-    # patches:
-    # - op: add
-    #   path: spec.containers[0].envFrom
-    #   value: 
-    #     - configmapRef:
-    #         name: openai-api-key
     sync:
     - path: ../../cmd/joke-worker:/app/cmd/joke-worker
       onUpload:
