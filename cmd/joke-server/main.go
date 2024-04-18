@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	// Connect to NATS
 	nc, err := nats.Connect(constants.NatsURL)
 	if err != nil {
@@ -42,9 +41,8 @@ func main() {
 
 		// Publish the joke text to the "joke.save" subject
 		nc.Publish(constants.SaveJokeSubject, []byte(joke.Text))
-
 	})
 
-	//Start the HTTP server
+	// Start the HTTP server
 	http.ListenAndServe(":8080", nil)
 }

@@ -34,5 +34,4 @@ func init() {
 	} else {
 		RedisURL = RedisEnvURL
 	}
-
 }

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"regexp"
 	"strings"
 	"time"
@@ -42,7 +41,7 @@ func GenerateJoke(client *openai.Client) (string, error) {
 					Content: "Tell me a dad joke",
 				},
 			}
-			resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+			resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 				Model:    openai.GPT4TurboPreview,
 				Messages: message,
 			})
@@ -83,21 +82,16 @@ func SaveJoke(ctx context.Context, svc *dynamodb.Client, joke *Joke) error {
 func GetRandomJoke(ctx context.Context, rdb *redis.Client) (Joke, error) {
 	var joke Joke
 
-	// Retrieve all joke IDs from Redis (from the 'jokeIDs' set)
-	jokeIDs, err := rdb.SMembers(ctx, "jokeIDs").Result()
+	// Retrieve a random joke ID directly from Redis
+	randomJokeID, err := rdb.SRandMember(ctx, "jokeIDs").Result()
 	if err != nil {
-		log.Printf("Error retrieving joke IDs from cache: %v", err)
+		log.Printf("Error retrieving random joke ID from cache: %v", err)
 		return joke, err
 	}
 
-	if len(jokeIDs) == 0 {
+	if randomJokeID == "" {
 		return joke, errors.New("no jokes available in cache")
 	}
-
-	// Select a random joke ID
-	rand.Seed(time.Now().UnixNano())
-	randomIndex := rand.Intn(len(jokeIDs))
-	randomJokeID := jokeIDs[randomIndex]
 
 	// Fetch the joke data from Redis using the selected joke ID
 	jokeData, err := rdb.Get(ctx, "joke:"+randomJokeID).Bytes()
@@ -123,7 +117,7 @@ func CacheJoke(ctx context.Context, rdb *redis.Client, joke *Joke) error {
 		return fmt.Errorf("failed to marshal joke: %v", err)
 	}
 
-	_, err = rdb.Set(ctx, fmt.Sprintf("joke:%s", joke.ID), jokeBytes, -1).Result() // Using -1 for no expiration
+	_, err = rdb.Set(ctx, fmt.Sprintf("joke:%s", joke.ID), jokeBytes, time.Minute*5).Result() // Expires after 5 min
 	if err != nil {
 		log.Printf("Failed to set joke in cache: %v", err)
 		return fmt.Errorf("failed to set joke in cache: %v", err)

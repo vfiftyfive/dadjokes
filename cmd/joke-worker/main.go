@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
@@ -47,13 +48,14 @@ func main() {
 
 	// Subscribe to the "jokes.get" subject
 	nc.Subscribe(constants.GetJokeSubject, func(msg *nats.Msg) {
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 
 		// Retrieve the count of jokes in Redis
 		jokeCount, err := rdb.SCard(ctx, "jokeIDs").Result()
 		if err != nil {
 			log.Printf("Error retrieving joke count: %v", err)
-			msg.Respond([]byte("Error retrieving jokes"))
+			msg.Respond([]byte("Error retrieving joke count"))
 			return
 		}
 
@@ -71,14 +73,25 @@ func main() {
 			generatedJokeTxt, err := joke.GenerateJoke(openaiClient)
 			if err != nil {
 				log.Printf("Error generating joke: %v", err)
+				msg.Respond([]byte("Error generating joke"))
 				return
 			}
 
 			// Check if the generated joke is a duplicate
 			isUnique := true
-			jokeIDs, _ := rdb.SMembers(ctx, "jokeIDs").Result()
+			jokeIDs, err := rdb.SMembers(ctx, "jokeIDs").Result()
+			if err != nil {
+				log.Printf("Error retrieving jokes from Redis: %v", err)
+				msg.Respond([]byte("Error retrieveing joke"))
+				return
+			}
 			for _, id := range jokeIDs {
-				existingJokeData, _ := rdb.Get(ctx, "joke:"+id).Bytes()
+				existingJokeData, err := rdb.Get(ctx, id).Bytes()
+				if err != nil {
+					log.Printf("Error retrieving joke from Redis: %v", err)
+					msg.Respond([]byte("Error retrieving joke"))
+					return
+				}
 				var existingJoke joke.Joke
 				json.Unmarshal(existingJokeData, &existingJoke)
 				if joke.IsSimilarJoke(existingJoke.Text, generatedJokeTxt) {
@@ -104,9 +117,15 @@ func main() {
 		}
 
 		// Respond with the selected or generated joke
-		jokeData, _ := json.Marshal(responseJoke)
+		jokeData, err := json.Marshal(responseJoke)
+		if err != nil {
+			log.Printf("Error serializing joke: %v", err)
+			msg.Respond([]byte("Error serializing joke"))
+			return
+		}
 		msg.Respond(jokeData)
 	})
+
 	// Subscribe to joke.save subject
 	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
 		ctx := context.Background()
