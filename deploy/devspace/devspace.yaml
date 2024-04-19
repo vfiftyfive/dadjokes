@@ -27,8 +27,7 @@ pipelines:
     run: |-
       run_dependencies --all                            # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all                         # 2. Ensure pull secrets
-      build_images --all -t $(git describe --always)    # 3. Build, tag (git commit hash) and push all images (see "images")
-      create_deployments  redis-operator dynamodb-operator
+      create_deployments redis-operator dynamodb-operator
       create_deployments nats joke-server joke-worker custom-resources
   build: |-
     run_dependencies --all
@@ -59,8 +58,7 @@ deployments:
   dynamodb-operator:
     helm:
       chart:
-        name: ack-dynamodb-controller
-        repo: oci://public.ecr.aws/aws-controllers-k8s/dynamodb-chart
+        name: oci://public.ecr.aws/aws-controllers-k8s/dynamodb-chart
         username: AWS
         password: ${ECR_PASSWORD}
         version: 1.2.10
