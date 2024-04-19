@@ -1,21 +1,33 @@
-{
-	"data": "ENC[AES256_GCM,data:5D8qgeeDOObGRCenTi5rflDP4zPizzywdVijZ7OnKUc26ZzR1J2QP4uptyn0lASxqZ/+clj7F5WBfewvXsba5H4i75OHNViPHWadPd/gn4t8AdI/5xiMsUOzdn+WRaRNKxW2t4WzpOqcVXt2Bsy93vYxm2Q1ru+ZmlykfY8X5D94pJCiV0S6jm/1V0kKNogyiRVaBgB5VcrmrZYc97V18zdlShl+RQ==,iv:hE2ac3x0dlcp0eTqdjZ5ax6Vx5iL8NlQvdxaYvk3jZI=,tag:UkCd/Q7SHB11ocBalX43GA==,type:str]",
-	"sops": {
-		"kms": null,
-		"gcp_kms": null,
-		"azure_kv": null,
-		"hc_vault": null,
-		"age": null,
-		"lastmodified": "2024-04-09T13:01:49Z",
-		"mac": "ENC[AES256_GCM,data:0ZjigGBxqubc2qiV4tq7reCnoIDFB6A9z1b6z1JHMhg11jSo/o7bJCwW1r68hAJb+UE4UABBgzaIf7Ey1HOwLnahxSFRiV/9xZjVvG0n4EFAdY1n4lk3TX8fFM7S8pIj7voSxe6PJFCxDdVBSxrYrT4WgEMU+Gbj+JljOkNaR7I=,iv:+qBcLOp9G0P6Ae+wA+B/J6BiTA9Q2j8JlpQlaqJswKY=,tag:iD0kh526t9fc/7TI49vQ0w==,type:str]",
-		"pgp": [
-			{
-				"created_at": "2024-04-09T13:01:49Z",
-				"enc": "-----BEGIN PGP MESSAGE-----\n\nhQGMA3OnqAqSgHzhAQv/V3xmUfif9jT8QIqwPdxBOzTOLxIvs97WB+7HAYBknPaX\n+EUpsmvRZkaGAiplQAHsj4z3pwtGoC82N9okfgZGsXwsRJk1gn+YuzRmACNvR7tV\n86hZnDQ3wKamCANUeL5p8G61/s21gTfHY4DUs2/7Nej8N+XkIsucm/O4uQonRL9g\nDLgOJGJlCVXfWtIjzkh4eaDO6VOMQXaBprWqJPYXHDz7LdBVErxHwb3mTI5kbYhr\nxQSaC91TybDbgjK8kK+E7VGLNHsUN20MU2qVYZPijsuNTGySLkmg86I+9TaCNkYV\nk4pUN1jDLjY67yLoLzb2+eq4mJCwY9muSoLDKoj0H930glp8FtgdRN5a0LySoPuT\nE0oZjSVMwHBtseIg3PIAxSchRPvBCWtj+H7WI91pXWSHIH/qiAsx1/NL2o0XnnGw\nJXWNb/feTc2aGiMrYnFYvuZLjlgQQO19OwhvinTSl1UmHJtTRcBCACARgao2d1wa\nKLSLhVgJMf+RtLOuL+y20l4Bxb7foLbSCIhFHFxTIyBM5GPdxZ8oPM2SJqQWPZPK\nck0tSyw5tq3Fcx58Ax3OnM47Z1CVDDNkpSlvuw9qd8cegFTT5wGcbM3mv/+7vgST\ninmpW5CjFDAu0mpyS5LF\n=awLU\n-----END PGP MESSAGE-----",
-				"fp": "0425B6496C542628"
-			}
-		],
-		"encrypted_regex": "^(data|stringData)$",
-		"version": "3.8.1"
-	}
-}
+apiVersion: v1
+data:
+    OPENAI_API_KEY: ENC[AES256_GCM,data:AxAO/SQn1X4rNgfhi8CN49sKdD9RphFFWYh+Wdl6WC6tKDLFIp9z16c5665lu2VvkhO4E2bzuRqWdScYAHRtIfQWHv2FBJglU0Psxw==,iv:fw6ycbZbGFWzayo9S2Maq2PTactJSbVxfovTXM5X/Iw=,tag:uZ8X9sNuBXNGj7tf5DHG7g==,type:str]
+kind: Secret
+metadata:
+    creationTimestamp: null
+    name: openai-api-key
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age: []
+    lastmodified: "2024-04-19T12:29:13Z"
+    mac: ENC[AES256_GCM,data:sLTj3hvh2/SjBIozrOojRPIhLNyEU/NVsxw2+zP2WPKkoP9ctLBbr/30Ne2m6DruITisgplDjykvdlnAvzIBo2X48hslbo+c8lo1CSxZ1bk90cuJhwYcFdIvybyVHxZavSXEu3kh3Z2pBkQ/2X4HsICEhYCx5V9yCSaE5L/nTbM=,iv:vWzAmhCzWLCvydtBGVp4k8VrOZuStqYV49/XMlWvSIQ=,tag:6ct5tfsemXUXcZj1fyNK2g==,type:str]
+    pgp:
+        - created_at: "2024-04-19T12:29:13Z"
+          enc: |
+            -----BEGIN PGP MESSAGE-----
+
+            hQEMAyUpShfNkFB/AQgAh9F+93wniuqONvtrY42GeuNtR7k3QzoRbvu8evh8MmX2
+            w6VuS+C52uRtB4wQ6j0DJSEkDKzIqrrUPV4vUW+0vpDTpUm0exbK9LSWVMFFwjj7
+            c24eCZ8/JxzQfiXG9+0DTwS3vDbksOYqNhAZvyLYjjesO+5hHB1Q1Obre02upJHc
+            4ZtkHOWXkq353W5rel1zyZEWIdWsaw7yCvE7lVqtMJPsJ0BjsuZEJnSNxWGd/BJw
+            MQFiABEJjaBw1frEKbbm045uZItD3xLYajKPgwZ/6kr1n/ikRL3qwyp7D7OgGKlW
+            +qPbRYwL2A9dOXqnHMDAY2R1rrYtWRLtMzKRZsbTkNRoAQkCEPEKNuOTS9npmc5V
+            fiHebhGupPr49USWgSWdL6wLqgNkhKmVfz6q59KKhtngn2JmUndriRmRhYHxNCpk
+            llcgPAl+Ad7hXmbGWKO3uneULnzTnchwQ1/T0wLVSU57yeviyBsaNSI=
+            =WpvE
+            -----END PGP MESSAGE-----
+          fp: 3D16CEE4A27381B4
+    encrypted_regex: ^(data|stringData)$
+    version: 3.7.3

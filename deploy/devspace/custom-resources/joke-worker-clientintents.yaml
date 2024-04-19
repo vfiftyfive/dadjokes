@@ -1,0 +1,12 @@
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: joke-worker
+spec:
+  service:
+    name: joke-worker
+  calls:
+  - name: "*"
+    type: aws
+    awsActions:
+        - "dynamodb:*"

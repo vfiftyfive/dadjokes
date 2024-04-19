@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.51.23
 	github.com/aws/aws-sdk-go-v2/config v1.27.11
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.31.1
+	github.com/google/uuid v1.6.0
 	github.com/nats-io/nats.go v1.25.0
 	github.com/redis/go-redis/v9 v9.0.3
 	github.com/sashabaranov/go-openai v1.20.5

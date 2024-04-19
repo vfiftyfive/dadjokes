@@ -5,11 +5,12 @@ metadata:
   namespace: dev
 spec:
   kubernetesConfig:
-    image: 'quay.io/opstree/redis:v7.0.12'
+    image: 'quay.io/opstree/redis:v7.0.5'
     imagePullPolicy: IfNotPresent
   storage:
     volumeClaimTemplate:
       spec:
+        storageClassName: ebs-sc
         accessModes:
           - ReadWriteOnce
         resources:
@@ -19,5 +20,6 @@ spec:
     enabled: true
     image: 'quay.io/opstree/redis-exporter:v1.44.0'
     imagePullPolicy: IfNotPresent
-  securityContext:
+  podSecurityContext:
     runAsUser: 1000
+    fsGroup: 1000

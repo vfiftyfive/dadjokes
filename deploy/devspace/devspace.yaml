@@ -62,6 +62,9 @@ deployments:
         username: AWS
         password: ${ECR_PASSWORD}
         version: 1.2.10
+      values:
+        aws:
+          region: "us-east-1"
   nats:
     helm:
       chart:
@@ -104,7 +107,7 @@ deployments:
                 value: redis:6379
               - name: OPENAI_API_KEY
                 valueFrom:
-                  configMapKeyRef:
+                  secretKeyRef:
                     name: openai-api-key
                     key: OPENAI_API_KEY
   custom-resources:
@@ -143,6 +146,12 @@ hooks:
   - name: "Decrypt OPENAI_API_KEY"
     command: "sops -d openai-api-key.enc.yaml | sed '/data: |/d' | kubectl apply -n ${NAMESPACE} -f -"
     events: ["before:deploy"]
+  - name: "Patch dynamodb controller"
+    command: "kubectl patch deployment -n ${NAMESPACE} dynamodb-operator-dynamodb-chart -p '{\"spec\": {\"template\":{\"metadata\":{\"labels\":{\"credentials-operator.otterize.com/create-aws-role\":\"true\"}}}} }'"
+    events: ["after:deploy:dynamodb-operator"]
+  - name: "Patch joke-worker"
+    command: "kubectl patch deployment -n ${NAMESPACE} joke-worker -p '{\"spec\": {\"template\":{\"metadata\":{\"labels\":{\"credentials-operator.otterize.com/create-aws-role\":\"true\"}}}} }'"
+    events: ["after:deploy:joke-worker"]
   - name: "Delete redis resources"
     command: "kubectl delete -n ${NAMESPACE} redis --all"
     events: ["before:purge"]
