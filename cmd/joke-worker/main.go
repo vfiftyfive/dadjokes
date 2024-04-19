@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
@@ -104,7 +105,10 @@ func main() {
 				continue // Generate a new joke if found similar
 			}
 
-			responseJoke = joke.Joke{Text: generatedJokeTxt}
+			responseJoke = joke.Joke{
+				ID:   uuid.New().String(),
+				Text: generatedJokeTxt,
+			}
 			// Save and cache the new, unique joke
 			err = joke.SaveJoke(ctx, dynamoClient, &responseJoke)
 			if err != nil {
