@@ -159,7 +159,7 @@ hooks:
     command: "kubectl delete -n ${NAMESPACE} pvc --all"
     events: ["after:purge"]
   - name: "Delete namespace"
-    command: "kubectl delete -n ${NAMESPACE}"
+    command: "kubectl delete ${NAMESPACE}"
     events: ["after:purge"]
 
 
