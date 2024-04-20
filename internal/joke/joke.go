@@ -67,7 +67,6 @@ func SaveJoke(ctx context.Context, svc *dynamodb.Client, joke Joke) error {
 
 	_, err := svc.PutItem(ctx, input)
 	if err != nil {
-		log.Printf("Error saving joke to DynamoDB: %v", err)
 		return fmt.Errorf("error saving joke to DynamoDB: %v", err)
 	}
 	return nil
@@ -93,9 +92,8 @@ func GetRandomJoke(ctx context.Context, rdb *redis.Client) (Joke, error) {
 
 // CacheJoke adds the new joke to the cache and tracks its ID for random retrieval
 func CacheJoke(ctx context.Context, rdb *redis.Client, joke Joke) error {
-	_, err := rdb.SAdd(ctx, "jokes", joke).Result()
+	_, err := rdb.SAdd(ctx, "jokes", string(joke)).Result()
 	if err != nil {
-		log.Printf("Failed to set joke in cache: %v", err)
 		return fmt.Errorf("failed to set joke in cache: %v", err)
 	}
 
