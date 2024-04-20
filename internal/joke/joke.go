@@ -113,7 +113,7 @@ func IsSimilarJoke(joke1, joke2 string) bool {
 	maxLength := max(len(joke1), len(joke2))
 	similarity := 1 - float64(distance)/float64(maxLength)
 
-	return similarity >= 0.5
+	return similarity >= 0.8
 }
 
 // Returns the max of two integers
