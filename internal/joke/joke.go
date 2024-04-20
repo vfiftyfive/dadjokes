@@ -87,10 +87,11 @@ func GetRandomJoke(ctx context.Context, rdb *redis.Client) (Joke, error) {
 		return joke, errors.New("no jokes available in cache")
 	}
 
+	joke = Joke(randomJokeID)
 	return joke, nil
 }
 
-// CacheJoke adds the new joke to the cache and tracks its ID for random retrieval
+// CacheJoke adds the new joke to the cache
 func CacheJoke(ctx context.Context, rdb *redis.Client, joke Joke) error {
 	_, err := rdb.SAdd(ctx, "jokes", string(joke)).Result()
 	if err != nil {
