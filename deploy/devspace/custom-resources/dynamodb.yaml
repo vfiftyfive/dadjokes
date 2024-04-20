@@ -2,17 +2,15 @@ apiVersion: dynamodb.services.k8s.aws/v1alpha1
 kind: Table
 metadata:
   name: jokestable
+  annotations:
+    services.k8s.aws/region: eu-west-2
 spec:
   tableName: JokesTable
   billingMode: PAY_PER_REQUEST
   tableClass: STANDARD
   attributeDefinitions:
-    - attributeName: ID
-      attributeType: S
-    - attributeName: Text
+    - attributeName: Joke
       attributeType: S
   keySchema:
-    - attributeName: ID
+    - attributeName: Joke
       keyType: HASH
-    - attributeName: Text
-      keyType: RANGE

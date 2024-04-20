@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
@@ -53,7 +51,7 @@ func main() {
 		defer cancel()
 
 		// Retrieve the count of jokes in Redis
-		jokeCount, err := rdb.SCard(ctx, "jokeIDs").Result()
+		jokeCount, err := rdb.SCard(ctx, "jokes").Result()
 		if err != nil {
 			log.Printf("Error retrieving joke count: %v", err)
 			msg.Respond([]byte("Error retrieving joke count"))
@@ -71,7 +69,7 @@ func main() {
 				continue
 			}
 			// Generate a new joke using OpenAI
-			generatedJokeTxt, err := joke.GenerateJoke(openaiClient)
+			responseJoke, err = joke.GenerateJoke(openaiClient)
 			if err != nil {
 				log.Printf("Error generating joke: %v", err)
 				msg.Respond([]byte("Error generating joke"))
@@ -80,22 +78,14 @@ func main() {
 
 			// Check if the generated joke is a duplicate
 			isUnique := true
-			jokeIDs, err := rdb.SMembers(ctx, "jokeIDs").Result()
+			cachedJokes, err := rdb.SMembers(ctx, "jokes").Result()
 			if err != nil {
-				log.Printf("Error retrieving jokes from Redis: %v", err)
-				msg.Respond([]byte("Error retrieveing joke"))
+				log.Printf("Error retrieving jokes from Redis for similarity check: %v", err)
+				msg.Respond([]byte("Error retrieving joke for similarity check"))
 				return
 			}
-			for _, id := range jokeIDs {
-				existingJokeData, err := rdb.Get(ctx, id).Bytes()
-				if err != nil {
-					log.Printf("Error retrieving joke from Redis: %v", err)
-					msg.Respond([]byte("Error retrieving joke"))
-					return
-				}
-				var existingJoke joke.Joke
-				json.Unmarshal(existingJokeData, &existingJoke)
-				if joke.IsSimilarJoke(existingJoke.Text, generatedJokeTxt) {
+			for _, cachedJoke := range cachedJokes {
+				if joke.IsSimilarJoke(cachedJoke, string(responseJoke)) {
 					isUnique = false
 					break
 				}
@@ -104,44 +94,28 @@ func main() {
 			if !isUnique {
 				continue // Generate a new joke if found similar
 			}
-
-			responseJoke = joke.Joke{
-				ID:   uuid.New().String(),
-				Text: generatedJokeTxt,
-			}
-			// Save and cache the new, unique joke
-			err = joke.SaveJoke(ctx, dynamoClient, &responseJoke)
-			if err != nil {
-				log.Printf("Error saving new joke: %v", err)
-				msg.Respond([]byte("Error saving new joke"))
-				return
-			}
-			joke.CacheJoke(ctx, rdb, &responseJoke)
 			break
 		}
 
 		// Respond with the selected or generated joke
-		jokeData, err := json.Marshal(responseJoke)
-		if err != nil {
-			log.Printf("Error serializing joke: %v", err)
-			msg.Respond([]byte("Error serializing joke"))
-			return
-		}
-		msg.Respond(jokeData)
+		log.Printf("responseJoke: %v", responseJoke)
+		msg.Respond([]byte(responseJoke))
 	})
 
 	// Subscribe to joke.save subject
 	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
 		ctx := context.Background()
-		newJoke := joke.Joke{Text: string(msg.Data)}
 
+		newJoke := joke.Joke(msg.Data)
+
+		log.Printf("Joke to save: %v", newJoke)
 		// Save and cache the new joke
-		err := joke.SaveJoke(ctx, dynamoClient, &newJoke)
+		err = joke.SaveJoke(ctx, dynamoClient, newJoke)
 		if err != nil {
 			log.Printf("Error saving new joke: %v", err)
 			return
 		}
-		err = joke.CacheJoke(ctx, rdb, &newJoke)
+		err = joke.CacheJoke(ctx, rdb, newJoke)
 		if err != nil {
 			log.Printf("Error caching joke: %v", err)
 		}

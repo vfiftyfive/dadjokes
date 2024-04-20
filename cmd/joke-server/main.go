@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,19 +27,8 @@ func main() {
 			http.Error(w, "Error getting joke", http.StatusInternalServerError)
 			return
 		}
-
-		joke := joke.Joke{}
-		err = json.Unmarshal(resp.Data, &joke)
-		if err != nil {
-			log.Printf("Error unmarshalling joke: %v", err)
-			http.Error(w, "Error unmarshalling joke", http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprintf(w, "Joke: %s", joke.Text)
-
-		// Publish the joke text to the "joke.save" subject
-		nc.Publish(constants.SaveJokeSubject, []byte(joke.Text))
+		fmt.Fprintf(w, "Joke: %s", joke.Joke(resp.Data))
+		nc.Publish(constants.SaveJokeSubject, resp.Data)
 	})
 
 	// Start the HTTP server

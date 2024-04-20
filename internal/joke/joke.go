@@ -2,7 +2,6 @@ package joke
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -19,13 +18,10 @@ import (
 )
 
 // Joke represents a joke
-type Joke struct {
-	ID   string
-	Text string
-}
+type Joke string
 
 // Generates a joke using OpenAI's GPT-4 API
-func GenerateJoke(client *openai.Client) (string, error) {
+func GenerateJoke(client *openai.Client) (Joke, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -54,19 +50,18 @@ func GenerateJoke(client *openai.Client) (string, error) {
 				continue
 			}
 			reWhitespace := regexp.MustCompile(`[\s\n\t]+`)
-			joke := reWhitespace.ReplaceAllString(resp.Choices[0].Message.Content, " ")
-			return joke, nil
+			clearJoke := reWhitespace.ReplaceAllString(resp.Choices[0].Message.Content, " ")
+			return Joke(clearJoke), nil
 		}
 	}
 }
 
 // Saves a joke to the database
-func SaveJoke(ctx context.Context, svc *dynamodb.Client, joke *Joke) error {
+func SaveJoke(ctx context.Context, svc *dynamodb.Client, joke Joke) error {
 	input := &dynamodb.PutItemInput{
 		TableName: aws.String("JokesTable"),
 		Item: map[string]types.AttributeValue{
-			"ID":   &types.AttributeValueMemberS{Value: joke.ID},
-			"Text": &types.AttributeValueMemberS{Value: joke.Text},
+			"Joke": &types.AttributeValueMemberS{Value: string(joke)},
 		},
 	}
 
@@ -83,7 +78,7 @@ func GetRandomJoke(ctx context.Context, rdb *redis.Client) (Joke, error) {
 	var joke Joke
 
 	// Retrieve a random joke ID directly from Redis
-	randomJokeID, err := rdb.SRandMember(ctx, "jokeIDs").Result()
+	randomJokeID, err := rdb.SRandMember(ctx, "jokes").Result()
 	if err != nil {
 		log.Printf("Error retrieving random joke ID from cache: %v", err)
 		return joke, err
@@ -93,41 +88,15 @@ func GetRandomJoke(ctx context.Context, rdb *redis.Client) (Joke, error) {
 		return joke, errors.New("no jokes available in cache")
 	}
 
-	// Fetch the joke data from Redis using the selected joke ID
-	jokeData, err := rdb.Get(ctx, "joke:"+randomJokeID).Bytes()
-	if err != nil {
-		log.Printf("Error retrieving joke from cache: %v", err)
-		return joke, err
-	}
-
-	err = json.Unmarshal(jokeData, &joke)
-	if err != nil {
-		log.Printf("Error unmarshalling joke: %v", err)
-		return joke, err
-	}
-
 	return joke, nil
 }
 
 // CacheJoke adds the new joke to the cache and tracks its ID for random retrieval
-func CacheJoke(ctx context.Context, rdb *redis.Client, joke *Joke) error {
-	jokeBytes, err := json.Marshal(joke)
-	if err != nil {
-		log.Printf("Failed to marshal joke: %v", err)
-		return fmt.Errorf("failed to marshal joke: %v", err)
-	}
-
-	_, err = rdb.Set(ctx, fmt.Sprintf("joke:%s", joke.ID), jokeBytes, time.Minute*5).Result() // Expires after 5 min
+func CacheJoke(ctx context.Context, rdb *redis.Client, joke Joke) error {
+	_, err := rdb.SAdd(ctx, "jokes", joke).Result()
 	if err != nil {
 		log.Printf("Failed to set joke in cache: %v", err)
 		return fmt.Errorf("failed to set joke in cache: %v", err)
-	}
-
-	// Add the joke ID to a set for random access
-	_, err = rdb.SAdd(ctx, "jokeIDs", joke.ID).Result()
-	if err != nil {
-		log.Printf("Failed to add joke ID to set: %v", err)
-		return fmt.Errorf("failed to add joke ID to set: %v", err)
 	}
 
 	return nil
