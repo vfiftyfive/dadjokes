@@ -18,7 +18,7 @@ pipelines:
     run: |-
       run_dependencies --all     
       ensure_pull_secrets --all
-      create_deployments redis-operator dynamodb-operator
+      create_deployments redis-operator  
       create_deployments nats joke-server joke-worker custom-resources
       start_dev --all
 
@@ -27,7 +27,7 @@ pipelines:
     run: |-
       run_dependencies --all                            # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all                         # 2. Ensure pull secrets
-      create_deployments redis-operator dynamodb-operator
+      create_deployments redis-operator 
       create_deployments nats joke-server joke-worker custom-resources
   build: |-
     run_dependencies --all
@@ -55,16 +55,6 @@ deployments:
       chart:
         name: redis-operator
         repo: https://ot-container-kit.github.io/helm-charts/
-  dynamodb-operator:
-    helm:
-      chart:
-        name: oci://public.ecr.aws/aws-controllers-k8s/dynamodb-chart
-        username: AWS
-        password: ${ECR_PASSWORD}
-        version: 1.2.10
-      values:
-        aws:
-          region: "us-east-1"
   nats:
     helm:
       chart:
@@ -146,12 +136,12 @@ hooks:
   - name: "Decrypt OPENAI_API_KEY"
     command: "sops -d openai-api-key.enc.yaml | sed '/data: |/d' | kubectl apply -n ${NAMESPACE} -f -"
     events: ["before:deploy"]
-  - name: "Patch dynamodb controller"
-    command: "kubectl patch deployment -n ${NAMESPACE} dynamodb-operator-dynamodb-chart -p '{\"spec\": {\"template\":{\"metadata\":{\"labels\":{\"credentials-operator.otterize.com/create-aws-role\":\"true\"}}}} }'"
-    events: ["after:deploy:dynamodb-operator"]
   - name: "Patch joke-worker"
     command: "kubectl patch deployment -n ${NAMESPACE} joke-worker -p '{\"spec\": {\"template\":{\"metadata\":{\"labels\":{\"credentials-operator.otterize.com/create-aws-role\":\"true\"}}}} }'"
     events: ["after:deploy:joke-worker"]
+  - name: "Delete dynamodb"
+    command: "kubectl delete -n ${NAMESPACE} table jokestable"
+    events: ["before: purge"]
   - name: "Delete redis resources"
     command: "kubectl delete -n ${NAMESPACE} redis --all"
     events: ["before:purge"]

@@ -2,6 +2,7 @@ apiVersion: k8s.otterize.com/v1alpha3
 kind: ClientIntents
 metadata:
   name: ack-dynamodb
+  namespace: ack-system
 spec:
   service:
     name: dynamodb-operator-dynamodb-chart
