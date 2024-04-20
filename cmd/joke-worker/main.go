@@ -92,7 +92,7 @@ func main() {
 			}
 
 			if !isUnique {
-				log.Printf("Hmmm OpenAI is generating a duplicated joke, trying again...")
+				log.Printf("Hmmm OpenAI is generating a duplicated joke, trying again... %v", responseJoke)
 				continue // Generate a new joke if found similar
 			}
 			break
