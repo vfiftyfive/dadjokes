@@ -21,7 +21,7 @@ func main() {
 
 	http.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		// Request a joke from the joke-worker
-		resp, err := nc.Request(constants.GetJokeSubject, nil, 15*time.Second)
+		resp, err := nc.Request(constants.GetJokeSubject, nil, 20*time.Second)
 		if err != nil {
 			log.Printf("Error getting joke: %v", err) // Log error
 			http.Error(w, "Error getting joke", http.StatusInternalServerError)

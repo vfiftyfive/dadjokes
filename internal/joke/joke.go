@@ -38,8 +38,9 @@ func GenerateJoke(client *openai.Client) (Joke, error) {
 				},
 			}
 			resp, err := client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-				Model:    openai.GPT4TurboPreview,
-				Messages: message,
+				Model:       openai.GPT4TurboPreview,
+				Messages:    message,
+				Temperature: 1.6,
 			})
 			if err != nil {
 				log.Printf("Error generating joke: %v", err)
@@ -113,7 +114,7 @@ func IsSimilarJoke(joke1, joke2 string) bool {
 	maxLength := max(len(joke1), len(joke2))
 	similarity := 1 - float64(distance)/float64(maxLength)
 
-	return similarity >= 0.8
+	return similarity >= 0.6
 }
 
 // Returns the max of two integers
