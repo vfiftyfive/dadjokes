@@ -8,8 +8,6 @@ vars:
   NAMESPACE: ${DEVSPACE_NAMESPACE}
   JOKE_SERVER: vfiftyfive/joke-server:${TAG}
   JOKE_WORKER: vfiftyfive/joke-worker:${TAG}
-  ECR_PASSWORD: $(aws ecr-public get-login-password --region us-east-1)
-
 
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
