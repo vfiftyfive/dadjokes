@@ -1,0 +1,72 @@
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: joke-server
+  namespace: dev
+spec:
+  service:
+    name: joke-server
+  calls:
+    - name: nats
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: joke-worker
+  namespace: dev
+spec:
+  service:
+    name: joke-worker
+  calls:
+    - name: mongodb
+    - name: nats
+    - name: redis
+    - type: internet
+      internet:
+        domains:
+        - api.openai.com
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: mongodb
+  namespace: dev
+spec:
+  service:
+    name: mongodb
+  calls:
+    - name: kubernetes.default
+    - name: mongodb
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: mongodb-kubernetes-operator
+  namespace: dev
+spec:
+  service:
+    name: mongodb-kubernetes-operator
+  calls:
+    - name: kubernetes.default
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: redis-operator
+  namespace: dev
+spec:
+  service:
+    name: redis-operator
+  calls:
+    - name: kubernetes.default
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: redis
+  namespace: dev
+spec:
+  service:
+    name: redis
+  calls:
+    - name: "redis"
