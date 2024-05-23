@@ -1,0 +1,17 @@
+varsEncrypted: true
+images:
+    joke-server:
+        imageConfigHash: bc5ea22ed0822b5f723b0593f27e3fd7fe7a5c6412da0ebb1f79d56144a300de
+        dockerfileHash: 592e6f4afcd13e8c344d68f85ee2aa1b1bacbe344b18a63a81745117de10c6fb
+        contextHash: f8ca6fbb798f6daf44f68d9d6a74133dd91dce29ff5f0fe4b344ec26a6367b81
+        imageName: vfiftyfive/joke-server
+        tag: 95470ba
+    joke-worker:
+        imageConfigHash: 52fb0e94ad8ffd13d2895d34a6e6fdf8a52f02dde15ed95a8366b19d84b63b67
+        dockerfileHash: 723806afc25fab0391b1321da90115512a3f2f4885f0dc756e625241f0e1eed5
+        contextHash: 776055976b98afaf5b88e41b77ac286d49abaa24c1c4cf72c221205312c5bd94
+        imageName: vfiftyfive/joke-worker
+        tag: 95470ba
+lastContext:
+    namespace: dev
+    context: nic@otterize.com@otterize-iam-eks-tutorial-nic.eu-west-2.eksctl.io

@@ -1,0 +1,54 @@
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: joke-server
+  namespace: dev
+spec:
+  service:
+    name: joke-server
+  calls:
+    - name: nats
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: joke-worker
+  namespace: dev
+spec:
+  service:
+    name: joke-worker
+  calls:
+    - name: nats
+    - name: redis
+    - internet:
+        domains:
+        - api.openai.com 
+        - dynamodb.eu-west-2.amazonaws.com
+        - sts.eu-west-2.amazonaws.com
+      type: internet
+    - name: arn:aws:dynamodb:eu-west-2:353146681200:table/JokesTable
+      awsActions:
+      - dynamodb:*
+      type: aws
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: redis
+  namespace: dev
+spec:
+  service:
+    name: redis
+  calls:
+    - name: redis
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: redis-operator
+  namespace: dev
+spec:
+  service:
+    name: redis-operator
+  calls:
+    - name: kubernetes.default
