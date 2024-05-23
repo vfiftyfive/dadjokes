@@ -51,4 +51,4 @@ spec:
   service:
     name: redis-operator
   calls:
-    - name: kubernetes.default
+    - name: svc:kubernetes.default

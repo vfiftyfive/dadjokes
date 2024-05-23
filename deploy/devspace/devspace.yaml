@@ -72,7 +72,7 @@ deployments:
           - image: ${JOKE_SERVER}
             env: 
             - name: NATS_URL
-              value: nats://nats:4222
+              value: nats-headless://nats:4222
         service:
           ports:
             - port: 8080
@@ -90,9 +90,9 @@ deployments:
           - image: ${JOKE_WORKER}
             env: 
               - name: NATS_URL
-                value: nats://nats:4222
+                value: nats-headless://nats:4222
               - name: REDIS_URL
-                value: redis:6379
+                value: redis-headless:6379
               - name: OPENAI_API_KEY
                 valueFrom:
                   secretKeyRef:
