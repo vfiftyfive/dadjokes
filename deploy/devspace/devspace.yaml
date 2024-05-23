@@ -99,7 +99,7 @@ deployments:
                 value: redis:6379
               - name: OPENAI_API_KEY
                 valueFrom:
-                  configMapKeyRef:
+                  secretKeyRef:
                     name: openai-api-key
                     key: OPENAI_API_KEY
   custom-resources:
