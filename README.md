@@ -109,6 +109,8 @@ EOF
 ```
 
 6. Create an encrypted Kubernetes ConfigMap with your OpenAI API key:
+
+First, create an OPENAI_API_KEY environment variable and configure it with your OpenAI API key.
 ```bash
 devspace run encrypt-openai-secret
 ```
