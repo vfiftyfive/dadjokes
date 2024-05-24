@@ -110,7 +110,7 @@ EOF
 
 6. Create an encrypted Kubernetes ConfigMap with your OpenAI API key:
 ```bash
-kubectl create configmap openai-api-key --from-literal=OPENAI_API_KEY=your_api_key_here --dry-run=client -o yaml | sops -e /dev/stdin > openai-api-key.enc.yaml
+devspace run encrypt-openai-secret
 ```
 
 4. Specify a namespace to use with DevSpace
