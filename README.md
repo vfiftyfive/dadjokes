@@ -126,7 +126,13 @@ devspace dev
 
 6. Generate a lot of jokes:
 
-First, expose the `joke-server` pod or service using port forwarding. Then, execute the following command:
+First, expose the `joke-server` pod or service using port forwarding.
+
+```bash
+kubectl -n dev port-forward svc/joke-server 8080:80
+```
+Then, execute the following command:
+
 ```bash 
 for i in {1..10}; do curl http://localhost:8080/joke; echo -e; done
 ```
