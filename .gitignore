@@ -1,3 +1,4 @@
 *sops.yaml
 *.env
 enable-egress.sh
+*.log
