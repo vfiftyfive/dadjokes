@@ -14,4 +14,4 @@ images:
         tag: 95470ba
 lastContext:
     namespace: dev
-    context: nic@otterize.com@otterize-iam-eks-tutorial-nic.eu-west-2.eksctl.io
+    context: arn:aws:eks:eu-west-2:353146681200:cluster/otterize-iam-eks-tutorial-nic
