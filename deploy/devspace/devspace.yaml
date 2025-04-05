@@ -25,7 +25,6 @@ pipelines:
     run: |-
       run_dependencies --all                            # 1. Deploy any projects this project needs (see "dependencies")
       ensure_pull_secrets --all                         # 2. Ensure pull secrets
-      build_images --all -t $(git describe --always)    # 3. Build, tag (git commit hash) and push all images (see "images")
       create_deployments mongodb-operator redis-operator
       create_deployments nats joke-server joke-worker custom-resources
   build: |-
@@ -72,9 +71,9 @@ deployments:
       values:
         containers:
           - image: ${JOKE_SERVER}
-            env: 
-            - name: NATS_URL
-              value: nats://nats:4222
+            env:
+              - name: NATS_URL
+                value: nats://nats:4222
         service:
           ports:
             - port: 8080
@@ -90,7 +89,7 @@ deployments:
       values:
         containers:
           - image: ${JOKE_WORKER}
-            env: 
+            env:
               - name: NATS_URL
                 value: nats://nats:4222
               - name: MONGO_URL
@@ -105,14 +104,14 @@ deployments:
   custom-resources:
     kubectl:
       manifests:
-      - custom-resources/
+        - custom-resources/
 
 # This is a list of `dev` containers that are based on the containers created by your deployments
 dev:
   joke-server:
     imageSelector: ${JOKE_SERVER}
     ports:
-    - port: "8080"
+      - port: "8080"
   joke-worker:
     imageSelector: ${JOKE_WORKER}
     command: ["./joke-worker"]
@@ -122,24 +121,24 @@ dev:
     # patches:
     # - op: add
     #   path: spec.containers[0].envFrom
-    #   value: 
+    #   value:
     #     - configmapRef:
     #         name: openai-api-key
     sync:
-    - path: ../../cmd/joke-worker:/app/cmd/joke-worker
-      onUpload:
-        restartContainer: true
-        exec:
-        - command: |-
-            go build -o joke-worker ./cmd/joke-worker/main.go
-    - path: ../../go.mod:/app/go.mod
-    - path: ../../go.sum:/app/go.sum
-    - path: ../../internal:/app/internal
-      onUpload:
-        restartContainer: true
-        exec:
-        - command: |-
-            go build -o joke-worker ./cmd/joke-worker/main.go
+      - path: ../../cmd/joke-worker:/app/cmd/joke-worker
+        onUpload:
+          restartContainer: true
+          exec:
+            - command: |-
+                go build -o joke-worker ./cmd/joke-worker/main.go
+      - path: ../../go.mod:/app/go.mod
+      - path: ../../go.sum:/app/go.sum
+      - path: ../../internal:/app/internal
+        onUpload:
+          restartContainer: true
+          exec:
+            - command: |-
+                go build -o joke-worker ./cmd/joke-worker/main.go
 
 hooks:
   - name: "Decrypt OPENAI_API_KEY"

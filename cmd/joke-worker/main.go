@@ -22,29 +22,29 @@ func main() {
 		log.Fatalf("OPENAI_API_KEY environment variable is not set")
 	}
 
-	//Create a new OpenAI client
+	// Create a new OpenAI client
 	openaiClient := openai.NewClient(apiKey)
 
-	//Connect to NATS
+	// Connect to NATS
 	nc, err := nats.Connect(constants.NatsURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to NATS: %v", err)
 	}
 	defer nc.Close()
 
-	//Connect to Redis
+	// Connect to Redis
 	rdb := redis.NewClient(&redis.Options{
 		Addr: constants.RedisURL,
 	})
 	defer rdb.Close()
 
-	//Test the connection to Redis
+	// Test the connection to Redis
 	_, err = rdb.Ping(context.Background()).Result()
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v with connection address set to %v", err, constants.RedisURL)
 	}
 
-	//Connect to MongoDB
+	// Connect to MongoDB
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(constants.MongoURL))
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
@@ -53,9 +53,8 @@ func main() {
 
 	jokesCollection := client.Database("jokesdb").Collection("jokes")
 
-	//Subscribe to the "jokes.get" subject
+	// Subscribe to the "jokes.get" subject
 	nc.Subscribe(constants.GetJokeSubject, func(msg *nats.Msg) {
-
 		jokesCount, err := jokesCollection.CountDocuments(context.Background(), bson.M{})
 		if err != nil {
 			log.Printf("Error counting jokes: %v", err)
@@ -65,7 +64,7 @@ func main() {
 
 		var retrievedJoke joke.Joke
 		for {
-			//If the DB collection reaches 20 jokes, pick a random joke from the cache or the DB
+			// If the DB collection reaches 20 jokes, pick a random joke from the cache or the DB
 			if jokesCount >= 20 {
 				retrievedJoke, err = joke.GetRandomJoke(jokesCollection, rdb)
 				if err == nil {
@@ -73,7 +72,7 @@ func main() {
 				}
 				continue
 			}
-			//Generate a new joke and make sure it's not a duplicate
+			// Generate a new joke and make sure it's not a duplicate
 			generatedJokeTxt, err := joke.GenerateJoke(openaiClient)
 			if err != nil {
 				log.Printf("Error generating joke: %v", err)
@@ -105,17 +104,16 @@ func main() {
 			}
 		}
 
-		//Respond with the joke
+		// Respond with the joke
 		jokeBytes, _ := json.Marshal(retrievedJoke)
 		err = msg.Respond(jokeBytes)
 		if err != nil {
 			log.Printf("Error responding to NATS message: %v", err)
 		}
-
 	})
 
 	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
-		// Save the joke to the DB
+		// Save the joke to the DB and cache it to Redis
 		retrievedJoke := joke.Joke{Text: string(msg.Data)}
 		err := joke.SaveJoke(jokesCollection, &retrievedJoke)
 		if err == nil {
