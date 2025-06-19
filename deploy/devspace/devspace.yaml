@@ -4,6 +4,8 @@ name: dadjokes
 vars:
   OPENAI_API_KEY:
     source: env
+  WORKER_IAM_ROLE:
+    source: env
   TAG: $(git describe --always)
   NAMESPACE: ${DEVSPACE_NAMESPACE}
   JOKE_SERVER: vfiftyfive/joke-server:${TAG}
@@ -35,13 +37,13 @@ pipelines:
 images:
   joke-server:
     image: ${JOKE_SERVER}
-    buildKit: 
+    buildKit:
       args: ["--platform=linux/amd64,linux/arm64"]
     dockerfile: ../../cmd/joke-server/Dockerfile
     context: ../..
   joke-worker:
     image: ${JOKE_WORKER}build
-    buildKit: 
+    buildKit:
       args: ["--platform=linux/amd64,linux/arm64"]
     dockerfile: ../../cmd/joke-worker/Dockerfile
     context: ../..
@@ -70,9 +72,9 @@ deployments:
       values:
         containers:
           - image: ${JOKE_SERVER}
-            env: 
-            - name: NATS_URL
-              value: nats://nats-headless:4222
+            env:
+              - name: NATS_URL
+                value: nats://nats-headless:4222
         service:
           ports:
             - port: 8080
@@ -88,7 +90,7 @@ deployments:
       values:
         containers:
           - image: ${JOKE_WORKER}
-            env: 
+            env:
               - name: NATS_URL
                 value: nats://nats-headless:4222
               - name: REDIS_URL
@@ -101,42 +103,42 @@ deployments:
   custom-resources:
     kubectl:
       manifests:
-      - custom-resources/
+        - custom-resources/
 
 # This is a list of `dev` containers that are based on the containers created by your deployments
 dev:
   joke-server:
     imageSelector: ${JOKE_SERVER}
     ports:
-    - port: "8080"
+      - port: "8080"
   joke-worker:
     imageSelector: ${JOKE_WORKER}
     command: ["./joke-worker"]
     restartHelper:
       inject: true
     sync:
-    - path: ../../cmd/joke-worker:/app/cmd/joke-worker
-      onUpload:
-        restartContainer: true
-        exec:
-        - command: |-
-            go build -o joke-worker ./cmd/joke-worker/main.go
-    - path: ../../go.mod:/app/go.mod
-    - path: ../../go.sum:/app/go.sum
-    - path: ../../internal:/app/internal
-      onUpload:
-        restartContainer: true
-        exec:
-        - command: |-
-            go build -o joke-worker ./cmd/joke-worker/main.go
+      - path: ../../cmd/joke-worker:/app/cmd/joke-worker
+        onUpload:
+          restartContainer: true
+          exec:
+            - command: |-
+                go build -o joke-worker ./cmd/joke-worker/main.go
+      - path: ../../go.mod:/app/go.mod
+      - path: ../../go.sum:/app/go.sum
+      - path: ../../internal:/app/internal
+        onUpload:
+          restartContainer: true
+          exec:
+            - command: |-
+                go build -o joke-worker ./cmd/joke-worker/main.go
 
 hooks:
   - name: "Decrypt OPENAI_API_KEY"
     command: "sops -d openai-api-key.enc.yaml | sed '/data: |/d' | kubectl apply -n ${NAMESPACE} -f -"
     events: ["before:deploy"]
-  - name: "Patch joke-worker"
-    command: "kubectl patch deployment -n ${NAMESPACE} joke-worker -p '{\"spec\": {\"template\":{\"metadata\":{\"labels\":{\"credentials-operator.otterize.com/create-aws-role\":\"true\"}}}} }'"
-    events: ["after:deploy:joke-worker"]
+  - name: "Annotate joke-worker serviceaccount"
+    command: "kubectl annotate -n ${NAMESPACE} sa default eks.amazonaws.com/role-arn=${WORKER_IAM_ROLE}"
+    events: ["before:deploy:joke-worker"]
   - name: "Delete dynamodb"
     command: "kubectl delete -n ${NAMESPACE} table jokestable"
     events: ["before: purge"]
@@ -149,7 +151,6 @@ hooks:
   - name: "Delete namespace"
     command: "kubectl delete namespace ${NAMESPACE}"
     events: ["after:purge"]
-
 
 commands:
   encrypt-openai-secret: |-

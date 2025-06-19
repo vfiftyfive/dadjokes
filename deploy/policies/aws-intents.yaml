@@ -1,0 +1,27 @@
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: joke-worker
+  namespace: dev
+spec:
+  service:
+    name: joke-worker
+  calls:
+    - name: arn:aws:dynamodb:eu-west-2:801971731812:table/JokesTable
+      awsActions:
+        - dynamodb:*
+      type: aws
+---
+apiVersion: k8s.otterize.com/v1alpha3
+kind: ClientIntents
+metadata:
+  name: ack-dynamodb
+  namespace: ack-system
+spec:
+  service:
+    name: ack-dynamodb-controller-dynamodb-chart
+  calls:
+    - name: arn:aws:dynamodb:eu-west-2:801971731812:table/JokesTable
+      awsActions:
+        - dynamodb:*
+      type: aws
