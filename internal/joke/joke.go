@@ -27,6 +27,20 @@ type Joke struct {
 	Text string
 }
 
+// Rating represents a joke rating
+type Rating struct {
+	JokeID  string    `bson:"joke_id" json:"joke_id"`
+	Score   int       `bson:"score" json:"score"`
+	RatedAt time.Time `bson:"rated_at" json:"rated_at"`
+}
+
+// JokeStats represents aggregated rating statistics
+type JokeStats struct {
+	JokeID       string  `bson:"_id" json:"joke_id"`
+	AverageScore float64 `bson:"avg_score" json:"avg_score"`
+	Count        int     `bson:"count" json:"count"`
+}
+
 // Generates a joke using OpenAI's GPT-3 API
 func GenerateJoke(client *openai.Client) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -40,12 +54,12 @@ func GenerateJoke(client *openai.Client) (string, error) {
 		default:
 			message := []openai.ChatCompletionMessage{
 				{
-					Role: openai.ChatMessageRoleUser,
+					Role:    openai.ChatMessageRoleUser,
 					Content: "Tell me a dad joke",
 				},
 			}
 			resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
-				Model: openai.GPT4TurboPreview,
+				Model:    openai.GPT4TurboPreview,
 				Messages: message,
 			})
 
@@ -147,4 +161,104 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// SaveRating saves a rating to the database
+func SaveRating(ratingsCollection *mongo.Collection, rating *Rating) error {
+	rating.RatedAt = time.Now()
+	_, err := ratingsCollection.InsertOne(context.Background(), rating)
+	if err != nil {
+		log.Printf("Error saving rating: %v", err)
+		return err
+	}
+	return nil
+}
+
+// GetJokeRating retrieves the average rating and count for a joke
+func GetJokeRating(ratingsCollection *mongo.Collection, jokeID string) (JokeStats, error) {
+	pipeline := mongo.Pipeline{
+		{{"$match", bson.D{{"joke_id", jokeID}}}},
+		{{"$group", bson.D{
+			{"_id", "$joke_id"},
+			{"avg_score", bson.D{{"$avg", "$score"}}},
+			{"count", bson.D{{"$sum", 1}}},
+		}}},
+	}
+
+	cursor, err := ratingsCollection.Aggregate(context.Background(), pipeline)
+	if err != nil {
+		return JokeStats{}, err
+	}
+	defer cursor.Close(context.Background())
+
+	var stats JokeStats
+	if cursor.Next(context.Background()) {
+		err = cursor.Decode(&stats)
+		if err != nil {
+			return JokeStats{}, err
+		}
+		return stats, nil
+	}
+
+	// No ratings found
+	return JokeStats{JokeID: jokeID, AverageScore: 0, Count: 0}, nil
+}
+
+// GetTopRatedJokes retrieves the top N rated jokes
+func GetTopRatedJokes(ratingsCollection *mongo.Collection, jokesCollection *mongo.Collection, limit int) ([]map[string]interface{}, error) {
+	pipeline := mongo.Pipeline{
+		{{"$group", bson.D{
+			{"_id", "$joke_id"},
+			{"avg_score", bson.D{{"$avg", "$score"}}},
+			{"count", bson.D{{"$sum", 1}}},
+		}}},
+		{{"$sort", bson.D{{"avg_score", -1}}}},
+		{{"$limit", limit}},
+	}
+
+	cursor, err := ratingsCollection.Aggregate(context.Background(), pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+
+	var results []map[string]interface{}
+	for cursor.Next(context.Background()) {
+		var stats JokeStats
+		err = cursor.Decode(&stats)
+		if err != nil {
+			continue
+		}
+
+		// Fetch the joke text
+		var joke Joke
+		err = jokesCollection.FindOne(context.Background(), bson.M{"_id": stats.JokeID}).Decode(&joke)
+		if err == nil {
+			result := map[string]interface{}{
+				"joke_id":       stats.JokeID,
+				"text":          joke.Text,
+				"average_score": stats.AverageScore,
+				"rating_count":  stats.Count,
+			}
+			results = append(results, result)
+		}
+	}
+
+	return results, nil
+}
+
+// GetJokeByID retrieves a joke by its ID
+func GetJokeByID(jokesCollection *mongo.Collection, jokeID string) (Joke, error) {
+	var joke Joke
+	objID, err := primitive.ObjectIDFromHex(jokeID)
+	if err != nil {
+		return joke, err
+	}
+
+	err = jokesCollection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&joke)
+	if err != nil {
+		return joke, err
+	}
+	joke.ID = jokeID
+	return joke, nil
 }

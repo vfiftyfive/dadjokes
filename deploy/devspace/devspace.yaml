@@ -8,6 +8,9 @@ vars:
   NAMESPACE: ${DEVSPACE_NAMESPACE}
   JOKE_SERVER: vfiftyfive/joke-server:${TAG}
   JOKE_WORKER: vfiftyfive/joke-worker:${TAG}
+  REGION:
+    source: env
+    default: "milan"
 
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
@@ -71,9 +74,43 @@ deployments:
       values:
         containers:
           - image: ${JOKE_SERVER}
+            ports:
+              - containerPort: 8080
             env:
               - name: NATS_URL
                 value: nats://nats:4222
+              - name: REGION
+                value: ${REGION}
+              - name: RATINGS_STORAGE_PATH
+                value: /data/ratings
+            volumeMounts:
+              - containerPath: /data/ratings
+                volume:
+                  name: ratings-storage
+                  readOnly: false
+            livenessProbe:
+              httpGet:
+                path: /livez
+                port: 8080
+              initialDelaySeconds: 10
+              periodSeconds: 10
+            readinessProbe:
+              httpGet:
+                path: /readyz
+                port: 8080
+              initialDelaySeconds: 5
+              periodSeconds: 5
+            startupProbe:
+              httpGet:
+                path: /startz
+                port: 8080
+              initialDelaySeconds: 0
+              periodSeconds: 5
+              failureThreshold: 30
+        volumes:
+          - name: ratings-storage
+            persistentVolumeClaim:
+              claimName: ratings-pvc
         service:
           ports:
             - port: 8080

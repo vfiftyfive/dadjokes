@@ -113,9 +113,16 @@ func main() {
 	})
 
 	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
+		// Parse the joke from JSON
+		var retrievedJoke joke.Joke
+		err := json.Unmarshal(msg.Data, &retrievedJoke)
+		if err != nil {
+			// Fallback to old format for backward compatibility
+			retrievedJoke = joke.Joke{Text: string(msg.Data)}
+		}
+
 		// Save the joke to the DB and cache it to Redis
-		retrievedJoke := joke.Joke{Text: string(msg.Data)}
-		err := joke.SaveJoke(jokesCollection, &retrievedJoke)
+		err = joke.SaveJoke(jokesCollection, &retrievedJoke)
 		if err == nil {
 			err = joke.CacheJoke(rdb, &retrievedJoke)
 			if err != nil {
