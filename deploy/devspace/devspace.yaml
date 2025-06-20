@@ -4,7 +4,9 @@ name: dadjokes
 vars:
   OPENAI_API_KEY:
     source: env
-  TAG: $(git describe --always)
+  TAG:
+    source: command
+    command: git rev-parse --short HEAD
   NAMESPACE: ${DEVSPACE_NAMESPACE}
   JOKE_SERVER: vfiftyfive/joke-server:${TAG}
   JOKE_WORKER: vfiftyfive/joke-worker:${TAG}
@@ -22,17 +24,17 @@ pipelines:
       create_deployments mongodb-operator redis-operator
       create_deployments nats joke-server joke-worker custom-resources
       start_dev --all
-
-  # You can run this pipeline via `devspace deploy` (or `devspace run-pipeline deploy`)
   deploy:
     run: |-
-      run_dependencies --all                            # 1. Deploy any projects this project needs (see "dependencies")
-      ensure_pull_secrets --all                         # 2. Ensure pull secrets
+      run_dependencies --all
+      ensure_pull_secrets --all
+      build_images --all -t ${TAG}
       create_deployments mongodb-operator redis-operator
       create_deployments nats joke-server joke-worker custom-resources
-  build: |-
-    run_dependencies --all
-    build_images --all -t $(git describe --always)
+  build:
+    run: |-
+      run_dependencies --all
+      build_images --all -t ${TAG}
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
 images:

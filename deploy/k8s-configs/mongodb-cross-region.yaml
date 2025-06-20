@@ -1,0 +1,181 @@
+# MongoDB namespace
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mongodb
+---
+# MongoDB ConfigMap for replica set configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: mongodb
+data:
+  mongo-init.js: |
+    // Wait for MongoDB to be ready
+    sleep(5000);
+    
+    // Check if already initialized
+    if (rs.status().ok === 1) {
+      print("Replica set already initialized");
+      quit();
+    }
+    
+    // Initialize replica set with cross-region members
+    rs.initiate({
+      _id: "rs0",
+      members: [
+        { 
+          _id: 0, 
+          host: "mongodb-0.mongodb-headless.mongodb.svc.cluster.local:27017", 
+          priority: 2  // Highest priority in Milan
+        },
+        { 
+          _id: 1, 
+          host: "mongodb-1.mongodb-headless.mongodb.svc.cluster.local:27017", 
+          priority: 1 
+        },
+        { 
+          _id: 2, 
+          host: "mongo.db.internal.k8sdr.com:27017",  // Cross-region member via NLB
+          priority: 0,  // Cannot become primary (DR only)
+          votes: 1      // Can vote in elections
+        }
+      ],
+      settings: {
+        electionTimeoutMillis: 5000,  // Fast elections
+        heartbeatIntervalMillis: 2000,
+        heartbeatTimeoutSecs: 10
+      }
+    });
+---
+# MongoDB StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: mongodb
+spec:
+  serviceName: mongodb-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - mongodb
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: mongodb
+        image: mongo:6.0
+        ports:
+        - containerPort: 27017
+          name: mongodb
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: "admin"
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: password
+        command:
+        - mongod
+        - "--replSet"
+        - "rs0"
+        - "--bind_ip_all"
+        - "--auth"
+        - "--keyFile"
+        - "/etc/mongodb-keyfile/keyfile"
+        volumeMounts:
+        - name: mongodb-data
+          mountPath: /data/db
+        - name: mongodb-keyfile
+          mountPath: /etc/mongodb-keyfile
+          readOnly: true
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+        livenessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: mongodb-keyfile
+        secret:
+          secretName: mongodb-keyfile
+          defaultMode: 0400
+      - name: init-script
+        configMap:
+          name: mongodb-config
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gp3
+      resources:
+        requests:
+          storage: 100Gi
+---
+# Headless service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-headless
+  namespace: mongodb
+spec:
+  clusterIP: None
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+    name: mongodb
+---
+# MongoDB secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: mongodb
+type: Opaque
+stringData:
+  password: "ChangeThisSecurePassword123!"
+---
+# MongoDB keyfile for replica set authentication
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-keyfile
+  namespace: mongodb
+type: Opaque
+stringData:
+  keyfile: |
+    hKmP8VQJRxwBqSx8QmqQBBq3pwJMgPti3pjrM8Vpz8QtvsFpLFQrT8r8nx9jtPxV
+    xOpHKTk77VkrGUBJrDhqMHnvJvKNWkn9tTQRVDkTRnQGMvHJhM8QV8xqk9fJrMQn 

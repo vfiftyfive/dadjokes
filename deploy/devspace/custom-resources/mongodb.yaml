@@ -7,6 +7,24 @@ spec:
   members: 1
   type: ReplicaSet
   version: "6.0.5"
+  statefulSet:
+    spec:
+      template:
+        spec:
+          serviceAccountName: mongodb-kubernetes-operator
+          containers:
+          - name: mongod
+            readinessProbe:
+              initialDelaySeconds: 60
+              periodSeconds: 30
+              timeoutSeconds: 10
+              failureThreshold: 10
+          - name: mongodb-agent
+            readinessProbe:
+              initialDelaySeconds: 30
+              periodSeconds: 20
+              timeoutSeconds: 5
+              failureThreshold: 5
   security:
     authentication:
       modes: ["SCRAM"]

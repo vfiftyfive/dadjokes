@@ -21,7 +21,6 @@ spec:
     imagePullPolicy: IfNotPresent
   securityContext:
     runAsUser: 999
-    fsGroup: 999
   podSecurityContext:
     runAsUser: 999
     fsGroup: 999
