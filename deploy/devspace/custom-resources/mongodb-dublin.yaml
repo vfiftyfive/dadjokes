@@ -3,8 +3,10 @@ kind: MongoDBCommunity
 metadata:
   name: mongodb
   namespace: dev
+  labels:
+    region: dublin
 spec:
-  members: 1
+  members: 2  # Secondary region gets 2 members
   type: ReplicaSet
   version: "6.0.5"
   statefulSet:
@@ -39,7 +41,7 @@ spec:
   users:
     - name: demo
       db: admin
-      passwordSecretRef: # a reference to the secret that will be used to generate the user's password
+      passwordSecretRef:
         name: user-password
       roles:
         - name: clusterAdmin
@@ -54,8 +56,6 @@ spec:
   additionalMongodConfig:
     storage.wiredTiger.engineConfig.journalCompressor: zlib
 
-# the user credentials will be generated from this secret
-# once the credentials are generated, this secret is no longer required
 ---
 apiVersion: v1
 kind: Secret
@@ -65,3 +65,22 @@ metadata:
 type: Opaque
 stringData:
   password: spectrocloud
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-external
+  namespace: dev
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+spec:
+  type: LoadBalancer
+  selector:
+    app: mongodb-svc
+  ports:
+    - port: 27017
+      targetPort: 27017
+      protocol: TCP 

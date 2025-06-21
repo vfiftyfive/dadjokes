@@ -46,21 +46,35 @@ func GenerateJoke(client *openai.Client) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// Topics for variety
+	topics := []string{
+		"technology", "programming", "animals", "food", "sports",
+		"music", "travel", "science", "school", "work",
+		"cars", "weather", "shopping", "cooking", "gardening",
+		"movies", "books", "space", "ocean", "mountains",
+	}
+
+	// Select a random topic
+	rand.Seed(time.Now().UnixNano())
+	topic := topics[rand.Intn(len(topics))]
+
 	// Retry mechanism with timeout
 	for {
 		select {
 		case <-ctx.Done():
-			return "", errors.New("GPT-3 API call timed out")
+			return "", errors.New("GPT-4 API call timed out")
 		default:
 			message := []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleUser,
-					Content: "Tell me a dad joke",
+					Content: fmt.Sprintf("Tell me a unique dad joke about %s. Make it original and different from common jokes.", topic),
 				},
 			}
 			resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
-				Model:    openai.GPT4TurboPreview,
-				Messages: message,
+				Model:       "gpt-4-turbo-preview",
+				Messages:    message,
+				Temperature: 0.9, // Higher temperature for more variety
+				MaxTokens:   150,
 			})
 
 			if err != nil {

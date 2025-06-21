@@ -1,33 +1,28 @@
 apiVersion: v1
 data:
-    OPENAI_API_KEY: ENC[AES256_GCM,data:aTDvLytXroRnibKEfnv5jWyfEVmF3gDW+EbOKvBdwUu1hQMA27SMMu5hX3bmi2s0rRIZFyW0FEHumsQaPpYf806LndVsIrlj5IRQ3A==,iv:hcQHsytoB4xasnuFyFarcU2CuyLx2fCpC6yhvBw19jM=,tag:2XdkO4tLavh0GZB2h5xvjQ==,type:str]
+    OPENAI_API_KEY: ENC[AES256_GCM,data:qdVN6J6DCa6DazSj+d71k2PPQO8vaCkdNhe7adCrfWRZrofgLOTggDcz6H4E5nP/ZyWv8kz9AzHSZuOVwAMr2ii7VfaMoqwDEjdO96I7S2aEp7Tor1V9bsp9UFGp7e0TBXfoLUvfSwF8CKhE1GEQAxKl1xv81KkS3rEk5n4X8r8xBFnJspWYjM54BU5iXl7puJFYa9BEnLS9hwhZPOUjKpSZMkh846Cc59/e4xcWSjSbSzDXs9jJhrqUSLB581zgbaP2X+hTuKf546/PkR3RPMGnj0xUerTP/w1QRQ==,iv:uieE1Ru6+/tYWEubJIYIOlrkY7eyNuzSj+KhOKH0SnA=,tag:qIu5aiJYDUrp3ZnKFRDdlQ==,type:str]
 kind: Secret
 metadata:
     creationTimestamp: null
     name: openai-api-key
 sops:
-    kms: []
-    gcp_kms: []
-    azure_kv: []
-    hc_vault: []
-    age: []
-    lastmodified: "2024-05-23T15:34:49Z"
-    mac: ENC[AES256_GCM,data:LNUsQ9LMnF7ollIRHKtFBgPTnHXMJPDJYywfIq9+hK+YiCTXUKObvdRJXvR3gH0Yed20qyE4Xqxz4KUwlcZx4NbgEUBgnV1CSxF7sx33OxfRHUNzDY72yn3RwqL7vZF6YMdzoX3Ckv/ZHz0pziVpL8v8eKrdsjl+YZmOhzHkXDs=,iv:JxK2xVfDAFd1LsUIBja41gqSde2QjuPJuI6uXZxY5cQ=,tag:SRSjdc46kdBKjxQitgB+yg==,type:str]
+    lastmodified: "2025-06-21T09:46:45Z"
+    mac: ENC[AES256_GCM,data:M5RmQ6CPzmy0I6bXP6ltuG0r6a9G9FFybumLf25AC0BunZICzZc2+vzS/MgfrWu/BX/MDh0DnFovbQNgUCu1f/9EhOjiB9NfhI8xoVjjVuXpJXRwzHmbWULKdqIy+eSTbegWSTP1N1Eem/k0+yuU8mqqP+7/AAo/0hVEGSfDyEQ=,iv:rgMULilzkV4XgCKMux9A32zs1hF+c81M1teTXuZNW7s=,tag:NBrO0h4bZa47vq0RuDBS+A==,type:str]
     pgp:
-        - created_at: "2024-05-23T15:34:49Z"
-          enc: |
+        - created_at: "2025-06-21T09:46:45Z"
+          enc: |-
             -----BEGIN PGP MESSAGE-----
 
-            hQEMAyUpShfNkFB/AQf/VEHrFemtkpFHTvbCs1sJTy5Odgyhxn1anRDROYa1nP1f
-            LqdmsCukqgMvtQ+wd4NHX0XJAzNxjWtrXWs14qPn/8qjKChWpbwtMo4nH7d97yNL
-            ujvEfbm/thTji93FkJCPjUc99RPZqwVOkx/fUSlL8kX09BqQ23tJElC4Y6GkF4w6
-            cQlg3/HeTgyxhglQOuPSKd8lxO5efXPyxdwAx5RTeOGZBfHvaVR4Z/LpTUoPYksk
-            AloCupE7ra2NOVWKLyfWlKAAbNmx4m+EFbxb1dy+B0R6cLExZoCPWC+FnizQ5Gpx
-            nVRRcR0fUAb2tIGhVw9oBSMfIFN0OUXHpxq8snOt39RoAQkCEAfOk6j/zrvojrrk
-            51MVuuNueynKxxe/B1gI2Soe67Opkb6FlwSl1KRCFYfBH9+9xnxdeNAibvnMo451
-            PektwH92t6yUd+U8WYIULJj9pbu5URGEj3+Tt2jn7h4T628IVJjp1s4=
-            =CWA1
+            hQEMAyUpShfNkFB/AQf9G/4o0YnLPz7HcI0vcvjvPUrGPSJBoDMthWJk4aqlKJLT
+            mCJhWutcWI/aZZ5ZF/G5xgSZ6bOZDNvgmB5U8HiFdb6rbRbkWH76U87tF933vCrJ
+            ZkxDVb7armke3Hkw60Ri9h7aQLEQaQBIpX8oZT9YF36sQimXMx8CcyDEvCeLfxrM
+            9XZs3i0YGCPYGtOnp7nxcVePzOFzxUP1vY9iSJZF6x0vkGAlb2ggSA9zu3a+Jt8b
+            hqtmi0nI4K5BjxaDTLNE656jwXM87aPmMeJjjqOCiaw6bT3UuIXz0rfskZtj8HFc
+            /iO8Z1PvfFtwuLRdL83Z8xjC+QZTizwGJvONEW5/KdRmAQkCEIDKuHSPgkuhC5+a
+            VCUd/j9aPGXuCKSXgEWdA0uD1ixzrJvj390CvEYt2b237dJ6/RuS9z54hEH7QbFa
+            uW+0sXGrm+H4laTE0TxtwhUvo4O3zIDC+TLPFTV6497XGVAMRxES
+            =SVgg
             -----END PGP MESSAGE-----
           fp: 3D16CEE4A27381B4
     encrypted_regex: ^(data|stringData)$
-    version: 3.7.3
+    version: 3.10.1

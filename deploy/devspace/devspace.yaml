@@ -13,6 +13,9 @@ vars:
   REGION:
     source: env
     default: "milan"
+  MONGODB_MEMBERS:
+    source: env
+    default: "3"  # 3 for Milan, 2 for Dublin
 
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
@@ -22,7 +25,7 @@ pipelines:
       run_dependencies --all     
       ensure_pull_secrets --all
       create_deployments mongodb-operator redis-operator
-      create_deployments nats joke-server joke-worker custom-resources
+      create_deployments pvc custom-resources nats joke-server joke-worker ingress
       start_dev --all
   deploy:
     run: |-
@@ -30,7 +33,7 @@ pipelines:
       ensure_pull_secrets --all
       build_images --all -t ${TAG}
       create_deployments mongodb-operator redis-operator
-      create_deployments nats joke-server joke-worker custom-resources
+      create_deployments pvc custom-resources nats joke-server joke-worker ingress
   build:
     run: |-
       run_dependencies --all
@@ -81,6 +84,8 @@ deployments:
             env:
               - name: NATS_URL
                 value: nats://nats:4222
+              - name: MONGO_URL
+                value: mongodb://demo:spectrocloud@mongodb-svc:27017
               - name: REGION
                 value: ${REGION}
               - name: RATINGS_STORAGE_PATH
@@ -111,8 +116,8 @@ deployments:
               failureThreshold: 30
         volumes:
           - name: ratings-storage
-            persistentVolumeClaim:
-              claimName: ratings-pvc
+            size: 1Gi
+            storageClassName: gp2
         service:
           ports:
             - port: 8080
@@ -143,7 +148,17 @@ deployments:
   custom-resources:
     kubectl:
       manifests:
-        - custom-resources/
+        - custom-resources/mongodb-rbac.yaml
+        - custom-resources/redis.yaml
+        - custom-resources/mongodb-${REGION}.yaml
+  pvc:
+    kubectl:
+      manifests:
+        - pvc.yaml
+  ingress:
+    kubectl:
+      manifests:
+        - ingress.yaml
 
 # This is a list of `dev` containers that are based on the containers created by your deployments
 dev:

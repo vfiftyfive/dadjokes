@@ -5,23 +5,20 @@ metadata:
   namespace: dev
 spec:
   kubernetesConfig:
-    image: 'quay.io/opstree/redis:v7.0.12'
+    image: redis:7.0.5
     imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 101m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
   storage:
     volumeClaimTemplate:
       spec:
-        accessModes:
-          - ReadWriteOnce
+        accessModes: ["ReadWriteOnce"]
         resources:
           requests:
             storage: 1Gi
-  redisExporter:
-    enabled: true
-    image: 'quay.io/opstree/redis-exporter:v1.44.0'
-    imagePullPolicy: IfNotPresent
-  securityContext:
-    runAsUser: 999
-  podSecurityContext:
-    runAsUser: 999
-    fsGroup: 999
-    runAsNonRoot: true
+        storageClassName: gp2 
