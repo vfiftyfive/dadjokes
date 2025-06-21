@@ -15,12 +15,20 @@ spec:
           containers:
           - name: mongod
             readinessProbe:
+              exec:
+                command:
+                  - /usr/bin/mongosh
+                  - --eval
+                  - db.adminCommand('ping')
               initialDelaySeconds: 60
               periodSeconds: 30
               timeoutSeconds: 10
               failureThreshold: 10
           - name: mongodb-agent
             readinessProbe:
+              exec:
+                command:
+                  - /opt/scripts/readinessprobe
               initialDelaySeconds: 30
               periodSeconds: 20
               timeoutSeconds: 5
