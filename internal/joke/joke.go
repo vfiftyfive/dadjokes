@@ -23,8 +23,8 @@ import (
 
 // Joke represents a joke
 type Joke struct {
-	ID   string
-	Text string
+	ID   string `bson:"_id,omitempty" json:"id"`
+	Text string `bson:"text" json:"text"`
 }
 
 // Rating represents a joke rating
@@ -132,9 +132,21 @@ func getJokeFromDB(jokesCollection *mongo.Collection) Joke {
 	}
 
 	opts := options.FindOne().SetSkip(int64(rand.Intn(int(count))))
-	err = jokesCollection.FindOne(context.Background(), bson.M{}, opts).Decode(&joke)
+
+	// Use a raw result to get the _id field
+	var result bson.M
+	err = jokesCollection.FindOne(context.Background(), bson.M{}, opts).Decode(&result)
 	if err != nil {
 		log.Printf("Error retrieving joke: %v", err)
+		return joke
+	}
+
+	// Extract the fields manually
+	if objID, ok := result["_id"].(primitive.ObjectID); ok {
+		joke.ID = objID.Hex()
+	}
+	if text, ok := result["text"].(string); ok {
+		joke.Text = text
 	}
 
 	return joke

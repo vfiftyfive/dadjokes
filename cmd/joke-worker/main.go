@@ -174,6 +174,24 @@ func main() {
 				log.Printf("Selected fallback joke: %s", fallbackJoke)
 				retrievedJoke = joke.Joke{Text: fallbackJoke}
 			}
+
+			// Save the new joke immediately so it has an ID
+			if retrievedJoke.Text != "" && retrievedJoke.ID == "" {
+				log.Printf("Saving new joke to generate ID")
+				err = joke.SaveJoke(jokesCollection, &retrievedJoke)
+				if err != nil {
+					log.Printf("Error saving new joke: %v", err)
+				} else {
+					log.Printf("New joke saved with ID: %s", retrievedJoke.ID)
+					// Also cache it
+					err = joke.CacheJoke(rdb, &retrievedJoke)
+					if err != nil {
+						log.Printf("Error caching new joke: %v", err)
+					} else {
+						log.Printf("New joke cached successfully")
+					}
+				}
+			}
 		}
 
 		// Respond with the joke
@@ -198,18 +216,23 @@ func main() {
 			retrievedJoke = joke.Joke{Text: string(msg.Data)}
 		}
 
-		// Save the joke to the DB and cache it to Redis
-		err = joke.SaveJoke(jokesCollection, &retrievedJoke)
-		if err == nil {
-			log.Printf("Joke saved to database: %s", retrievedJoke.Text)
-			err = joke.CacheJoke(rdb, &retrievedJoke)
-			if err != nil {
-				log.Printf("Error caching joke: %v", err)
+		// Only save if it doesn't already have an ID (avoid duplicates)
+		if retrievedJoke.ID == "" {
+			// Save the joke to the DB and cache it to Redis
+			err = joke.SaveJoke(jokesCollection, &retrievedJoke)
+			if err == nil {
+				log.Printf("Joke saved to database: %s", retrievedJoke.Text)
+				err = joke.CacheJoke(rdb, &retrievedJoke)
+				if err != nil {
+					log.Printf("Error caching joke: %v", err)
+				} else {
+					log.Printf("Joke cached successfully")
+				}
 			} else {
-				log.Printf("Joke cached successfully")
+				log.Printf("Error saving joke: %v", err)
 			}
 		} else {
-			log.Printf("Error saving joke: %v", err)
+			log.Printf("Joke already has ID %s, skipping save", retrievedJoke.ID)
 		}
 	})
 
