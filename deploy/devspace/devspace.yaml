@@ -46,6 +46,7 @@ vars:
     source: env
     default: ""
 
+
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
   # This is the pipeline for the main command: `devspace dev` (or `devspace run-pipeline dev`)
@@ -63,10 +64,6 @@ pipelines:
       build_images --all -t ${TAG} -t latest
       create_deployments mongodb-operator redis-operator
       create_deployments mongodb-config custom-resources nats joke-server joke-worker ingress
-      if [ "${REGION}" = "dublin" ]; then
-        echo "Deploying MongoDB join job for Dublin..."
-        create_deployments mongodb-join-milan
-      fi
   build:
     run: |-
       run_dependencies --all
@@ -142,8 +139,9 @@ deployments:
               httpGet:
                 path: /readyz
                 port: 8080
-              initialDelaySeconds: 5
-              periodSeconds: 5
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              timeoutSeconds: 5
             startupProbe:
               httpGet:
                 path: /startz
@@ -218,10 +216,6 @@ deployments:
           MONGO_PORT: "27017"
           MONGO_FAILOVER_TIMEOUT: "30"
           MONGO_RETRY_WRITES: "true"
-  mongodb-join-milan:
-    kubectl:
-      manifests:
-        - custom-resources/mongodb-dublin-join-milan.yaml
   ingress:
     kubectl:
       manifests:
@@ -268,17 +262,16 @@ hooks:
   - name: "Annotate MongoDB service for external-dns"
     command: |
       echo "Waiting for MongoDB service to be created..."
-      kubectl wait --for=condition=ready pod -l app=mongodb-svc -n ${NAMESPACE} --timeout=120s || true
-      echo "Patching mongodb-svc with external-dns annotations..."
-      if [ "${REGION}" = "milan" ]; then
-        kubectl annotate svc mongodb-svc -n ${NAMESPACE} --overwrite \
-          external-dns.alpha.kubernetes.io/hostname="milan.mongodb.internal.k8sdr.com" \
-          external-dns.alpha.kubernetes.io/ttl="60" || true
-      else
-        kubectl annotate svc mongodb-svc -n ${NAMESPACE} --overwrite \
-          external-dns.alpha.kubernetes.io/hostname="dublin.mongodb.internal.k8sdr.com" \
-          external-dns.alpha.kubernetes.io/ttl="60" || true
-      fi
+      SVC_NAME="mongodb-svc"
+      echo "Looking for service: ${SVC_NAME}"
+      echo "Using kubectl context: $(kubectl config current-context)"
+      kubectl wait --for=condition=ready pod -l app=${SVC_NAME} -n ${NAMESPACE} --timeout=120s || true
+      echo "Patching ${SVC_NAME} with external-dns annotations..."
+      kubectl annotate svc ${SVC_NAME} -n ${NAMESPACE} --overwrite \
+        external-dns.alpha.kubernetes.io/hostname="${REGION}.mongodb.internal.k8sdr.com" \
+        external-dns.alpha.kubernetes.io/ttl="60" || true
+      echo "Verifying annotation was applied..."
+      kubectl get svc ${SVC_NAME} -n ${NAMESPACE} -o jsonpath='{.metadata.annotations.external-dns\.alpha\.kubernetes\.io/hostname}' || true
     events: ["after:deploy:custom-resources"]
   - name: "Delete redis resources"
     command: "kubectl delete -n ${NAMESPACE} redis --all"
