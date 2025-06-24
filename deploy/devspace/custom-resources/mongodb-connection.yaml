@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-connection
+  namespace: dev
+data:
+  # MongoDB Connection Components (Dynamic via DevSpace variables)
+  MONGO_USERNAME: "${MONGO_USERNAME}"
+  MONGO_PASSWORD: "${MONGO_PASSWORD}"
+  MONGO_DATABASE: "${MONGO_DATABASE}"
+  MONGO_REPLICA_SET: "${MONGO_REPLICA_SET}"
+  MONGO_HOSTS: "${MONGO_HOSTS}"
+  MONGO_READ_PREFERENCE: "${MONGO_READ_PREFERENCE}"
+  MONGO_MAX_STALENESS_SECONDS: "${MONGO_MAX_STALENESS_SECONDS}"
+  MONGO_SSL: "${MONGO_SSL}"
+  MONGO_AUTH_MECHANISM: "${MONGO_AUTH_MECHANISM}"
+  
+  # Legacy configuration (for backward compatibility)
+  MONGO_HOST: mongodb-svc
+  MONGO_PORT: "27017"
+  MONGO_FAILOVER_TIMEOUT: "30"
+  MONGO_RETRY_WRITES: "true"

@@ -204,9 +204,6 @@ func handleJoke(w http.ResponseWriter, r *http.Request) {
 		"text":   jokeObj.Text,
 		"region": region,
 	})
-
-	// Publish the joke to save
-	nc.Publish(constants.SaveJokeSubject, resp.Data)
 }
 
 func handleJokeByID(w http.ResponseWriter, r *http.Request) {

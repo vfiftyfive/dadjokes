@@ -8,14 +8,43 @@ vars:
     source: command
     command: git rev-parse --short HEAD
   NAMESPACE: ${DEVSPACE_NAMESPACE}
-  JOKE_SERVER: vfiftyfive/joke-server:${TAG}
-  JOKE_WORKER: vfiftyfive/joke-worker:${TAG}
+  JOKE_SERVER: vfiftyfive/joke-server:latest
+  JOKE_WORKER: vfiftyfive/joke-worker:latest
   REGION:
     source: env
     default: "milan"
   MONGODB_MEMBERS:
     source: env
     default: "3"  # 3 for Milan, 2 for Dublin
+  
+  # MongoDB Connection Variables
+  MONGO_USERNAME:
+    source: env
+    default: "demo"
+  MONGO_PASSWORD:
+    source: env
+    default: "spectrocloud"
+  MONGO_DATABASE:
+    source: env
+    default: "jokesdb"
+  MONGO_REPLICA_SET:
+    source: env
+    default: "mongodb"
+  MONGO_HOSTS:
+    source: env
+    default: "mongodb-0.mongodb-svc.dev.svc.cluster.local:27017,mongodb-1.mongodb-svc.dev.svc.cluster.local:27017,mongodb-2.mongodb-svc.dev.svc.cluster.local:27017"
+  MONGO_READ_PREFERENCE:
+    source: env
+    default: "primaryPreferred"
+  MONGO_MAX_STALENESS_SECONDS:
+    source: env
+    default: "90"
+  MONGO_SSL:
+    source: env
+    default: "false"
+  MONGO_AUTH_MECHANISM:
+    source: env
+    default: ""
 
 # This is a list of `pipelines` that DevSpace can execute (you can define your own)
 pipelines:
@@ -25,19 +54,23 @@ pipelines:
       run_dependencies --all     
       ensure_pull_secrets --all
       create_deployments mongodb-operator redis-operator
-      create_deployments pvc custom-resources nats joke-server joke-worker ingress
+      create_deployments mongodb-config custom-resources nats joke-server joke-worker ingress
       start_dev --all
   deploy:
     run: |-
       run_dependencies --all
       ensure_pull_secrets --all
-      build_images --all -t ${TAG}
+      build_images --all -t ${TAG} -t latest
       create_deployments mongodb-operator redis-operator
-      create_deployments pvc custom-resources nats joke-server joke-worker ingress
+      create_deployments mongodb-config custom-resources nats joke-server joke-worker ingress
+      if [ "${REGION}" = "dublin" ]; then
+        echo "Deploying MongoDB join job for Dublin..."
+        create_deployments mongodb-join-milan
+      fi
   build:
     run: |-
       run_dependencies --all
-      build_images --all -t ${TAG}
+      build_images --all -t ${TAG} -t latest
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
 images:
@@ -84,12 +117,16 @@ deployments:
             env:
               - name: NATS_URL
                 value: nats://nats:4222
-              - name: MONGO_URL
-                value: mongodb://demo:spectrocloud@mongodb-svc:27017
               - name: REGION
                 value: ${REGION}
               - name: RATINGS_STORAGE_PATH
                 value: /data/ratings
+            envFrom:
+              - configMapRef:
+                  name: mongodb-connection
+              - secretRef:
+                  name: mongodb-admin-demo
+                  prefix: MONGO_
             volumeMounts:
               - containerPath: /data/ratings
                 volume:
@@ -117,7 +154,7 @@ deployments:
         volumes:
           - name: ratings-storage
             size: 1Gi
-            storageClassName: gp2
+            storageClassName: gp3
         service:
           ports:
             - port: 8080
@@ -136,8 +173,6 @@ deployments:
             env:
               - name: NATS_URL
                 value: nats://nats:4222
-              - name: MONGO_URL
-                value: mongodb://demo:spectrocloud@mongodb-svc:27017
               - name: REDIS_URL
                 value: redis:6379
               - name: OPENAI_API_KEY
@@ -145,16 +180,48 @@ deployments:
                   secretKeyRef:
                     name: openai-api-key
                     key: OPENAI_API_KEY
+            envFrom:
+              - configMapRef:
+                  name: mongodb-connection
+              - secretRef:
+                  name: mongodb-admin-demo
+                  prefix: MONGO_
   custom-resources:
     kubectl:
       manifests:
         - custom-resources/mongodb-rbac.yaml
+        - custom-resources/mongodb-admin-secret.yaml
         - custom-resources/redis.yaml
         - custom-resources/mongodb-${REGION}.yaml
-  pvc:
+        - custom-resources/mongodb-nlb-${REGION}.yaml
+  mongodb-config:
+    kubectl:
+      inlineManifest: |
+        ---
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: mongodb-connection
+          namespace: ${NAMESPACE}
+        data:
+          MONGO_USERNAME: "${MONGO_USERNAME}"
+          MONGO_PASSWORD: "${MONGO_PASSWORD}"
+          MONGO_DATABASE: "${MONGO_DATABASE}"
+          MONGO_REPLICA_SET: "${MONGO_REPLICA_SET}"
+          MONGO_HOSTS: "${MONGO_HOSTS}"
+          MONGO_READ_PREFERENCE: "${MONGO_READ_PREFERENCE}"
+          MONGO_MAX_STALENESS_SECONDS: "${MONGO_MAX_STALENESS_SECONDS}"
+          MONGO_SSL: "${MONGO_SSL}"
+          MONGO_AUTH_MECHANISM: ""
+          # Legacy configuration
+          MONGO_HOST: mongodb-svc
+          MONGO_PORT: "27017"
+          MONGO_FAILOVER_TIMEOUT: "30"
+          MONGO_RETRY_WRITES: "true"
+  mongodb-join-milan:
     kubectl:
       manifests:
-        - pvc.yaml
+        - custom-resources/mongodb-dublin-join-milan.yaml
   ingress:
     kubectl:
       manifests:
@@ -198,6 +265,21 @@ hooks:
   - name: "Decrypt OPENAI_API_KEY"
     command: "sops -d openai-api-key.enc.yaml | sed '/data: |/d' | kubectl apply -n ${NAMESPACE} -f -"
     events: ["before:deploy"]
+  - name: "Annotate MongoDB service for external-dns"
+    command: |
+      echo "Waiting for MongoDB service to be created..."
+      kubectl wait --for=condition=ready pod -l app=mongodb-svc -n ${NAMESPACE} --timeout=120s || true
+      echo "Patching mongodb-svc with external-dns annotations..."
+      if [ "${REGION}" = "milan" ]; then
+        kubectl annotate svc mongodb-svc -n ${NAMESPACE} --overwrite \
+          external-dns.alpha.kubernetes.io/hostname="milan.mongodb.internal.k8sdr.com" \
+          external-dns.alpha.kubernetes.io/ttl="60" || true
+      else
+        kubectl annotate svc mongodb-svc -n ${NAMESPACE} --overwrite \
+          external-dns.alpha.kubernetes.io/hostname="dublin.mongodb.internal.k8sdr.com" \
+          external-dns.alpha.kubernetes.io/ttl="60" || true
+      fi
+    events: ["after:deploy:custom-resources"]
   - name: "Delete redis resources"
     command: "kubectl delete -n ${NAMESPACE} redis --all"
     events: ["before:purge"]

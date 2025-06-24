@@ -1,12 +1,12 @@
 apiVersion: mongodbcommunity.mongodb.com/v1
 kind: MongoDBCommunity
 metadata:
-  name: mongodb
+  name: mongodb-dublin
   namespace: dev
   labels:
     region: dublin
 spec:
-  members: 2  # Secondary region gets 2 members
+  members: 2
   type: ReplicaSet
   version: "6.0.5"
   statefulSet:
@@ -66,21 +66,3 @@ type: Opaque
 stringData:
   password: spectrocloud
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mongodb-external
-  namespace: dev
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
-    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
-spec:
-  type: LoadBalancer
-  selector:
-    app: mongodb-svc
-  ports:
-    - port: 27017
-      targetPort: 27017
-      protocol: TCP 

@@ -1,0 +1,125 @@
+---
+# Job to scale down MongoDB operator and join Milan replica set
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-dublin-join-milan
+  namespace: dev
+spec:
+  template:
+    spec:
+      serviceAccountName: mongodb-kubernetes-operator
+      restartPolicy: Never
+      containers:
+      - name: join-replica-set
+        image: bitnami/mongodb:6.0.5
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "Waiting for MongoDB pods to be ready..."
+          kubectl wait --for=condition=ready pod -l app=mongodb-dublin-members-svc -n dev --timeout=300s
+
+          echo "Scaling down MongoDB operator to prevent interference..."
+          kubectl scale deployment mongodb-kubernetes-operator -n dev --replicas=0
+
+          echo "Waiting for operator to scale down..."
+          sleep 30
+
+          echo "Getting Milan primary MongoDB connection..."
+          MILAN_PRIMARY="mongodb-0.milan.mongodb.internal.k8sdr.com:27017"
+          
+          echo "Getting Dublin MongoDB pod IPs..."
+          DUBLIN_POD_0=$(kubectl get pod mongodb-dublin-0 -n dev -o jsonpath='{.status.podIP}')
+          DUBLIN_POD_1=$(kubectl get pod mongodb-dublin-1 -n dev -o jsonpath='{.status.podIP}')
+
+          echo "Connecting to Milan primary to add Dublin members..."
+          mongosh "mongodb://demo:spectrocloud@${MILAN_PRIMARY}/admin?authSource=admin" <<EOF
+          
+          // Get current replica set configuration
+          var config = rs.conf();
+          print("Current replica set members: " + config.members.length);
+          
+          // Find the highest member ID
+          var maxId = Math.max(...config.members.map(m => m._id));
+          
+          // Add Dublin members as secondaries with lower priority
+          config.members.push({
+            _id: maxId + 1,
+            host: "mongodb-0.dublin.mongodb.internal.k8sdr.com:27017",
+            priority: 0,
+            votes: 0,
+            tags: { region: "dublin", dc: "dublin" }
+          });
+          
+          config.members.push({
+            _id: maxId + 2,
+            host: "mongodb-1.dublin.mongodb.internal.k8sdr.com:27017",
+            priority: 0,
+            votes: 0,
+            tags: { region: "dublin", dc: "dublin" }
+          });
+          
+          // Increment config version
+          config.version++;
+          
+          // Reconfigure the replica set
+          rs.reconfig(config, {force: true});
+          
+          print("Waiting for replica set to stabilize...");
+          sleep(10000);
+          
+          // Check status
+          rs.status();
+          EOF
+
+          echo "Dublin MongoDB members have been added to Milan replica set as non-voting secondaries"
+          echo "To enable voting and allow failover, run:"
+          echo "rs.reconfig({...rs.conf(), members: rs.conf().members.map(m => ({...m, votes: 1, priority: m.tags?.region === 'dublin' ? 0.5 : 1}))})"
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: demo
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: spectrocloud
+        volumeMounts:
+        - name: kubectl
+          mountPath: /usr/local/bin/kubectl
+          subPath: kubectl
+          readOnly: true
+      volumes:
+      - name: kubectl
+        hostPath:
+          path: /usr/local/bin/kubectl
+          type: File
+---
+# ServiceAccount permissions for the Job
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mongodb-join-role
+  namespace: dev
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments", "deployments/scale"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mongodb-join-rolebinding
+  namespace: dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mongodb-join-role
+subjects:
+- kind: ServiceAccount
+  name: mongodb-kubernetes-operator
+  namespace: dev

@@ -41,17 +41,19 @@ type JokeStats struct {
 	Count        int     `bson:"count" json:"count"`
 }
 
-// Generates a joke using OpenAI's GPT-3 API
+// GenerateJoke generates a new joke using OpenAI API
+// Updated: Testing file sync functionality
 func GenerateJoke(client *openai.Client) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Topics for variety
 	topics := []string{
-		"technology", "programming", "animals", "food", "sports",
-		"music", "travel", "science", "school", "work",
-		"cars", "weather", "shopping", "cooking", "gardening",
-		"movies", "books", "space", "ocean", "mountains",
+		"cats", "dogs", "pizza", "coffee", "cars",
+		"phones", "computers", "books", "music", "movies",
+		"school", "work", "shopping", "cooking", "cleaning",
+		"weather", "vacation", "exercise", "sleep", "breakfast",
+		"dentist", "doctor", "barber", "restaurant", "library",
 	}
 
 	// Select a random topic
@@ -67,14 +69,14 @@ func GenerateJoke(client *openai.Client) (string, error) {
 			message := []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleUser,
-					Content: fmt.Sprintf("Tell me a unique dad joke about %s. Make it original and different from common jokes.", topic),
+					Content: fmt.Sprintf("Generate a simple, clean dad joke about %s. Requirements: 1) Must be easy to understand 2) Must have a clear setup and punchline 3) Must be family-friendly 4) Should be genuinely funny, not confusing 5) Keep it short and simple. Format: Just return the joke, nothing else.", topic),
 				},
 			}
 			resp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
 				Model:       "gpt-4-turbo-preview",
 				Messages:    message,
-				Temperature: 0.9, // Higher temperature for more variety
-				MaxTokens:   150,
+				Temperature: 0.7, // Reduced from 0.9 for more coherent jokes
+				MaxTokens:   100, // Reduced from 150 for shorter jokes
 			})
 
 			if err != nil {

@@ -205,37 +205,6 @@ func main() {
 		}
 	})
 
-	nc.Subscribe(constants.SaveJokeSubject, func(msg *nats.Msg) {
-		log.Printf("Received save joke request")
-
-		// Parse the joke from JSON
-		var retrievedJoke joke.Joke
-		err := json.Unmarshal(msg.Data, &retrievedJoke)
-		if err != nil {
-			// Fallback to old format for backward compatibility
-			retrievedJoke = joke.Joke{Text: string(msg.Data)}
-		}
-
-		// Only save if it doesn't already have an ID (avoid duplicates)
-		if retrievedJoke.ID == "" {
-			// Save the joke to the DB and cache it to Redis
-			err = joke.SaveJoke(jokesCollection, &retrievedJoke)
-			if err == nil {
-				log.Printf("Joke saved to database: %s", retrievedJoke.Text)
-				err = joke.CacheJoke(rdb, &retrievedJoke)
-				if err != nil {
-					log.Printf("Error caching joke: %v", err)
-				} else {
-					log.Printf("Joke cached successfully")
-				}
-			} else {
-				log.Printf("Error saving joke: %v", err)
-			}
-		} else {
-			log.Printf("Joke already has ID %s, skipping save", retrievedJoke.ID)
-		}
-	})
-
 	log.Printf("Joke-worker ready and listening for requests")
 
 	// Wait for messages
